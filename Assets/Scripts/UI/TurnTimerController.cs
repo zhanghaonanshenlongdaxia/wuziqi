@@ -25,10 +25,14 @@ namespace Wuziqi.UI
 
         [Header("配置")]
         [SerializeField] private float timeLimit = 20f;
+        [SerializeField] private AudioSource sfxSource;
+        [SerializeField] private AudioClip warningClip;
+        [SerializeField] private float warningThreshold = 5f;
 
         private static readonly Color InkColor = new Color(0.23f, 0.22f, 0.20f);
         private static readonly Color DangerColor = new Color(0.76f, 0.15f, 0.16f);
         private float remaining;
+        private bool warnedThisTurn;
 
         private void Start()
         {
@@ -54,7 +58,7 @@ namespace Wuziqi.UI
         private void OnTurnChanged(bool isPlayerTurn) => ResetTimer();
         private void OnReset() => ResetTimer();
         private void OnStoneRemoved(Vector2Int cell) => ResetTimer();
-        private void ResetTimer() => remaining = timeLimit;
+        private void ResetTimer() { remaining = timeLimit; warnedThisTurn = false; }
 
         private void Update()
         {
@@ -67,8 +71,15 @@ namespace Wuziqi.UI
             if (remaining <= 0f)
             {
                 remaining = timeLimit;
+                warnedThisTurn = false;
                 TimeoutPlace();
                 return;
+            }
+
+            if (!warnedThisTurn && remaining <= warningThreshold)
+            {
+                warnedThisTurn = true;
+                if (sfxSource != null && warningClip != null) sfxSource.PlayOneShot(warningClip);
             }
 
             float ratio = remaining / timeLimit;

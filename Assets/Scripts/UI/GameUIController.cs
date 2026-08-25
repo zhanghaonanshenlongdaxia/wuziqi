@@ -22,12 +22,16 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text turnText;
 
         [Header("音频")]
-        [SerializeField] private AudioSource bgmSource;
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioClip stoneClip;
         [SerializeField] private AudioClip winClip;
         [SerializeField] private AudioClip loseClip;
+        [SerializeField] private AudioClip drawClip;
         [SerializeField] private AudioClip clickClip;
+        [SerializeField] private AudioClip undoClip;
+        [SerializeField] private AudioClip thinkingClip;
+        [SerializeField] private AudioClip meowClip;
+        [SerializeField] private AudioClip warningClip;
 
         private int dialogToken;
 
@@ -48,7 +52,6 @@ namespace Wuziqi.UI
 
             resultDialog.SetActive(false);
             UpdateTurnText(gameManager.IsPlayerTurn);
-            StartBGM();
         }
 
         private void OnDestroy()
@@ -64,22 +67,6 @@ namespace Wuziqi.UI
         private void Update()
         {
             undoButton.interactable = gameManager.CanUndo;
-        }
-
-        private void StartBGM()
-        {
-            if (bgmSource == null) return;
-            if (bgmSource.clip == null)
-            {
-                GameObject go = GameObject.Find("BGM_AudioSource");
-                if (go != null && go.TryGetComponent(out AudioSource src) && src.clip != null)
-                    bgmSource.clip = src.clip;
-            }
-            if (bgmSource.clip != null && !bgmSource.isPlaying)
-            {
-                bgmSource.loop = true;
-                bgmSource.Play();
-            }
         }
 
         // ---------- 事件处理 ----------
@@ -110,7 +97,7 @@ namespace Wuziqi.UI
                           || (result == GameResult.WhiteWin && gameManager.playerColor == StoneColor.White);
             resultText.text = result == GameResult.Draw ? "势均力敌 · 平局"
                             : (playerWon ? "妙手连连 · 你赢了" : "棋差一着 · 再战一局？");
-            PlayOneShot(result == GameResult.Draw ? winClip : (playerWon ? winClip : loseClip));
+            PlayOneShot(result == GameResult.Draw ? drawClip : (playerWon ? winClip : loseClip));
             StartCoroutine(ShowDialogAfter(0.7f));
         }
 
@@ -122,7 +109,11 @@ namespace Wuziqi.UI
                 resultDialog.SetActive(true);
         }
 
-        private void OnTurnChanged(bool isPlayerTurn) => UpdateTurnText(isPlayerTurn);
+        private void OnTurnChanged(bool isPlayerTurn)
+        {
+            UpdateTurnText(isPlayerTurn);
+            if (!isPlayerTurn) PlayOneShot(thinkingClip);
+        }
 
         private void UpdateTurnText(bool isPlayerTurn)
         {
@@ -134,7 +125,7 @@ namespace Wuziqi.UI
 
         private void OnUndoClicked()
         {
-            PlayOneShot(clickClip);
+            PlayOneShot(undoClip != null ? undoClip : clickClip);
             gameManager.Undo();
         }
 
@@ -150,6 +141,12 @@ namespace Wuziqi.UI
             PlayOneShot(clickClip);
             resultDialog.SetActive(false);
             dialogToken++;
+        }
+
+        /// <summary>点击猫立绘：播放猫叫。</summary>
+        public void OnCatPortraitClicked()
+        {
+            PlayOneShot(meowClip);
         }
 
         // ---------- 手数统计（左侧信息名牌）----------
