@@ -1,0 +1,48 @@
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+
+# Unity asset meta data (保留，团队协作需要)
+# *.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Codely CLI
+.codely-cli/
+.codely.packages/
+.com-unity-codely.json
+.codelyignore
+
+# 生成器历史（可重新生成的大文件）
+Assets/TJGenerators/History/
+
+# 录屏截图
+screenshots/
+
+# Unity Crashlytics
+sysinfo.txt
+crashlytics-build.properties
