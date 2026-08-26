@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 079b26729f079c945b0c5941c396997b, type: 3}
+  m_Name: "Cat_4_\u82B1\u6591"
+  m_EditorClassIdentifier: 
+  catName: "\u82B1\u6591"
+  description: "\u4E09\u82B1\u732B\u82B1\u6591\uFF0C\u7075\u52A8\u591A\u53D8\uFF0C\u653B\u5B88\u517C\u5907\u3002"
+  portrait: {fileID: 0}
+  difficulty: 4
+  aiSearchDepth: 6
+  aiScoreMultiplier: 1.5
+  winReward: 30
+  unlockType: 1
+  coinCost: 0
+  framesDir: idle

@@ -98,6 +98,15 @@ namespace Wuziqi.UI
             resultText.text = result == GameResult.Draw ? "势均力敌 · 平局"
                             : (playerWon ? "妙手连连 · 你赢了" : "棋差一着 · 再战一局？");
             PlayOneShot(result == GameResult.Draw ? drawClip : (playerWon ? winClip : loseClip));
+
+            // 胜利给仙喵币
+            if (playerWon && CatManager.Instance != null && CatManager.Instance.Selected != null
+                && EconomyManager.Instance != null)
+            {
+                int reward = CatManager.Instance.Selected.winReward;
+                EconomyManager.Instance.AddCoins(reward);
+            }
+
             StartCoroutine(ShowDialogAfter(0.7f));
         }
 
@@ -126,7 +135,18 @@ namespace Wuziqi.UI
         private void OnUndoClicked()
         {
             PlayOneShot(undoClip != null ? undoClip : clickClip);
-            gameManager.Undo();
+            // 看广告才能悔棋
+            if (Wuziqi.Game.AdManager.Instance != null)
+            {
+                Wuziqi.Game.AdManager.Instance.ShowRewarded("undo", success =>
+                {
+                    if (success) gameManager.Undo();
+                });
+            }
+            else
+            {
+                gameManager.Undo();
+            }
         }
 
         private void OnRestartClicked()

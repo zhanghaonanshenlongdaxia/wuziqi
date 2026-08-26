@@ -22,6 +22,12 @@
       },
       "url": "https://packages.unity.cn"
     },
+    "com.anklebreaker.unity-mcp": {
+      "version": "file:unity-mcp-plugin",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.2d.animation": {
       "version": "9.2.0",
       "depth": 1,

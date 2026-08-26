@@ -54,6 +54,9 @@ namespace Wuziqi.UI
         private float lastBubbleEnd = -10f;
         private const float BubbleCooldown = 2.5f;
 
+        private string currentFramesDir;
+
+
         private void Start()
         {
             if (gameManager == null) gameManager = GameManager.Instance;
@@ -64,8 +67,17 @@ namespace Wuziqi.UI
 
             bubbleRoot.SetActive(false);
             UpdateStreakText();
+
+            // Load frames from CatManager if available, otherwise use serialized arrays
+            if (CatManager.Instance != null && CatManager.Instance.Selected != null)
+                ReloadFrames(CatManager.Instance.Selected.framesDir);
+
             SetMood(Mood.Idle);
             ShowBubble(PickLine(OpeningLinesForStreak(WinStreak.Get())), 3f, true);
+
+            // Subscribe to cat changes
+            if (CatManager.Instance != null)
+                CatManager.Instance.OnCatChanged += OnCatChanged;
         }
 
         private void OnDestroy()
@@ -75,6 +87,67 @@ namespace Wuziqi.UI
             gameManager.PlayerTurnChanged -= OnTurnChanged;
             gameManager.BoardReset -= OnBoardReset;
             gameManager.GameEnded -= OnGameEnded;
+            if (CatManager.Instance != null)
+                CatManager.Instance.OnCatChanged -= OnCatChanged;
+        }
+
+        // ---------- 猫猫切换 ----------
+
+        private void OnCatChanged(int newIndex)
+        {
+            var cat = CatManager.Instance.GetCat(newIndex);
+            if (cat != null)
+                ReloadFrames(cat.framesDir);
+            SetMood(Mood.Idle);
+        }
+
+        private void ReloadFrames(string framesDir)
+        {
+            if (string.IsNullOrEmpty(framesDir)) return;
+            currentFramesDir = framesDir;
+
+            // Support two layouts:
+            // 1. Per-cat: Frames/{framesDir}/{mood}  (multi-cat future)
+            // 2. Flat:    Frames/{mood}              (current single-cat, framesDir=="idle" fallback)
+            idleFrames      = LoadFrameDir(framesDir, "idle")      ?? LoadFlatDir("idle");
+            thinkingFrames  = LoadFrameDir(framesDir, "thinking")  ?? LoadFlatDir("thinking");
+            smugFrames      = LoadFrameDir(framesDir, "smug")      ?? LoadFlatDir("smug");
+            worriedFrames   = LoadFrameDir(framesDir, "worried")   ?? LoadFlatDir("worried");
+            celebrateFrames = LoadFrameDir(framesDir, "celebrate") ?? LoadFlatDir("celebrate");
+            defeatFrames    = LoadFrameDir(framesDir, "defeat")    ?? LoadFlatDir("defeat");
+        }
+
+        private static Sprite[] LoadFlatDir(string mood)
+        {
+            string path = $"Assets/Art/Cat/Frames/{mood}";
+            var guids = UnityEditor.AssetDatabase.FindAssets("t:Sprite", new[] { path });
+            if (guids == null || guids.Length == 0) return null;
+            var sprites = new System.Collections.Generic.List<Sprite>();
+            foreach (var g in guids)
+            {
+                var p = UnityEditor.AssetDatabase.GUIDToAssetPath(g);
+                var s = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(p);
+                if (s != null) sprites.Add(s);
+            }
+            sprites.Sort((a, b) => a.name.CompareTo(b.name));
+            return sprites.Count > 0 ? sprites.ToArray() : null;
+        }
+
+        private static Sprite[] LoadFrameDir(string catDir, string mood)
+        {
+            string path = $"Assets/Art/Cat/Frames/{catDir}/{mood}";
+            if (!UnityEditor.AssetDatabase.IsValidFolder(path)) return null;
+            var guids = UnityEditor.AssetDatabase.FindAssets("t:Sprite", new[] { path });
+            if (guids == null || guids.Length == 0) return null;
+            var sprites = new System.Collections.Generic.List<Sprite>();
+            foreach (var g in guids)
+            {
+                var p = UnityEditor.AssetDatabase.GUIDToAssetPath(g);
+                var s = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>(p);
+                if (s != null) sprites.Add(s);
+            }
+            sprites.Sort((a, b) => a.name.CompareTo(b.name));
+            return sprites.Count > 0 ? sprites.ToArray() : null;
         }
 
         // ---------- 事件处理 ----------
