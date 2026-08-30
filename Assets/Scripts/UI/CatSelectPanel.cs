@@ -73,14 +73,20 @@ namespace Wuziqi.UI
             previewIndex = index;
             var c = cats[index];
             bool unlocked = CatManager.Instance.IsUnlocked(index);
+            bool isCurrent = CatManager.Instance != null && CatManager.Instance.SelectedIndex == index;
 
             if (nameText) nameText.text = c.catName;
             if (descText) descText.text = c.description;
             if (difficultyText) difficultyText.text = $"难度 {new string('★', c.difficulty)}{new string('☆', 5 - c.difficulty)}";
-            if (unlockHintText) unlockHintText.text = unlocked ? "已解锁" : GetUnlockHint(c);
+            if (unlockHintText) unlockHintText.text = !unlocked ? GetUnlockHint(c) : (isCurrent ? "出战中" : "已解锁");
             if (unlockAdButton) unlockAdButton.gameObject.SetActive(!unlocked && c.unlockType == CatProfile.UnlockType.Ad);
             if (unlockCoinsButton) unlockCoinsButton.gameObject.SetActive(!unlocked && c.unlockType == CatProfile.UnlockType.Coins);
-            if (confirmButton) confirmButton.interactable = unlocked;
+            if (confirmButton)
+            {
+                confirmButton.interactable = unlocked && !isCurrent;
+                var label = confirmButton.GetComponentInChildren<TMPro.TMP_Text>();
+                if (label != null) label.text = isCurrent ? "出战中" : "出 战";
+            }
         }
 
         private string GetUnlockHint(CatProfile c)

@@ -37,6 +37,9 @@ namespace Wuziqi.Game
 
         public bool IsUnlocked(int index)
         {
+            // TODO: 临时解锁所有猫用于测试，完成后改回原逻辑
+            return true;
+
             if (cats == null || index < 0 || index >= cats.Length) return false;
             var c = cats[index];
             if (c.unlockType == CatProfile.UnlockType.Free) return true;

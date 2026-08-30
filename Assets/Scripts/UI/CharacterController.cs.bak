@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,15 +9,12 @@ using Wuziqi.Game;
 namespace Wuziqi.UI
 {
     /// <summary>
-    /// 猫仙人对手：运行时帧动画（直接换Sprite）、对话气泡、局势情绪联动、连胜记录。
-    /// 每只猫有独立的帧动画资源，切换猫时自动加载对应动画。
-    /// 不依赖 Animator / UnityEditor API，打包安全。
-    /// </summary>
+    /// 鐚粰浜哄鎵嬶細杩愯鏃跺抚鍔ㄧ敾锛堢洿鎺ユ崲Sprite锛夈€佸璇濇皵娉°€佸眬鍔挎儏缁仈鍔ㄣ€佽繛鑳滆褰曘€?    /// 涓嶄緷璧?Animator / UnityEditor API锛屾墦鍖呭畨鍏ㄣ€?    /// </summary>
     public class CharacterController : MonoBehaviour
     {
         public enum Mood { Idle, Thinking, Smug, Worried, Celebrate, Defeat }
 
-        [Header("引用")]
+        [Header("寮曠敤")]
         [SerializeField] private GameManager gameManager;
         [SerializeField] private Image portrait;
         [SerializeField] private GameObject bubbleRoot;
@@ -25,26 +22,24 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text streakText;
         [SerializeField] private Sprite fallbackPortrait;
 
-        [Header("动画")]
+        [Header("鍔ㄧ敾")]
         [SerializeField, Range(2f, 15f)] private float frameRate = 6f;
-        [SerializeField] private string framesResourceRoot = "CatFrames";
+        [SerializeField] private string framesResourcePath = "CatFrames";
 
-        [Header("台词库")]
-        [SerializeField, TextArea] private string[] openingLines = { "哼，本仙猫让你三子。", "来来来，本座倒要看看你的棋力。" };
-        [SerializeField, TextArea] private string[] openingLinesStreak3 = { "连胜三场，尾巴要翘上天了？" };
-        [SerializeField, TextArea] private string[] openingLinesStreak5 = { "又是你？！这次本仙猫绝不留情！" };
-        [SerializeField, TextArea] private string[] thinkingLines = { "让我想想…", "唔…这步棋有玄机…" };
-        [SerializeField, TextArea] private string[] aiStrongLines = { "接招！", "看好了，这就是仙家的实力～" };
-        [SerializeField, TextArea] private string[] aiGoodLines = { "嘿嘿，妙不可言～", "本座的棋，天衣无缝。" };
-        [SerializeField, TextArea] private string[] playerThreatBigLines = { "不、不妙…", "这不可能！" };
-        [SerializeField, TextArea] private string[] playerThreatLines = { "咦？有两下子。", "小瞧你了…" };
-        [SerializeField, TextArea] private string[] aiWinLines = { "承让承让～喵", "本仙猫宝刀未老！" };
-        [SerializeField, TextArea] private string[] playerWinLines = { "哼！今日状态不佳，不算不算。", "本座…只是让着你！" };
-        [SerializeField, TextArea] private string[] drawLines = { "平局？有趣，你有些长进。" };
+        [Header("鍙拌瘝搴?)]
+        [SerializeField, TextArea] private string[] openingLines = { "鍝硷紝鏈粰鐚浣犱笁瀛愩€?, "鏉ユ潵鏉ワ紝鏈骇鍊掕鐪嬬湅浣犵殑妫嬪姏銆? };
+        [SerializeField, TextArea] private string[] openingLinesStreak3 = { "杩炶儨涓夊満锛屽熬宸磋缈樹笂澶╀簡锛? };
+        [SerializeField, TextArea] private string[] openingLinesStreak5 = { "鍙堟槸浣狅紵锛佽繖娆℃湰浠欑尗缁濅笉鐣欐儏锛? };
+        [SerializeField, TextArea] private string[] thinkingLines = { "璁╂垜鎯虫兂鈥?, "鍞斺€﹁繖姝ユ鏈夌巹鏈衡€? };
+        [SerializeField, TextArea] private string[] aiStrongLines = { "鎺ユ嫑锛?, "鐪嬪ソ浜嗭紝杩欏氨鏄粰瀹剁殑瀹炲姏锝? };
+        [SerializeField, TextArea] private string[] aiGoodLines = { "鍢垮樋锛屽涓嶅彲瑷€锝?, "鏈骇鐨勬锛屽ぉ琛ｆ棤缂濄€? };
+        [SerializeField, TextArea] private string[] playerThreatBigLines = { "涓嶃€佷笉濡欌€?, "杩欎笉鍙兘锛? };
+        [SerializeField, TextArea] private string[] playerThreatLines = { "鍜︼紵鏈変袱涓嬪瓙銆?, "灏忕灖浣犱簡鈥? };
+        [SerializeField, TextArea] private string[] aiWinLines = { "鎵胯鎵胯锝炲柕", "鏈粰鐚疂鍒€鏈€侊紒" };
+        [SerializeField, TextArea] private string[] playerWinLines = { "鍝硷紒浠婃棩鐘舵€佷笉浣筹紝涓嶇畻涓嶇畻銆?, "鏈骇鈥﹀彧鏄鐫€浣狅紒" };
+        [SerializeField, TextArea] private string[] drawLines = { "骞冲眬锛熸湁瓒ｏ紝浣犳湁浜涢暱杩涖€? };
 
-        // ========== 二维帧数据：[猫名][表情] = Sprite[] ==========
-        private Dictionary<string, Dictionary<Mood, Sprite[]>> catFrames = new Dictionary<string, Dictionary<Mood, Sprite[]>>();
-        private string currentCatName;
+        // 甯у姩鐢绘暟鎹?        private Dictionary<Mood, Sprite[]> moodFrames = new Dictionary<Mood, Sprite[]>();
         private Mood currentMood = Mood.Idle;
         private Mood pendingMood;
         private bool hasPending;
@@ -57,13 +52,10 @@ namespace Wuziqi.UI
         private void Start()
         {
             if (gameManager == null) gameManager = GameManager.Instance;
-            if (gameManager != null)
-            {
-                gameManager.StonePlaced += OnStonePlaced;
-                gameManager.PlayerTurnChanged += OnTurnChanged;
-                gameManager.BoardReset += OnBoardReset;
-                gameManager.GameEnded += OnGameEnded;
-            }
+            gameManager.StonePlaced += OnStonePlaced;
+            gameManager.PlayerTurnChanged += OnTurnChanged;
+            gameManager.BoardReset += OnBoardReset;
+            gameManager.GameEnded += OnGameEnded;
 
             if (bubbleRoot != null) bubbleRoot.SetActive(false);
             UpdateStreakText();
@@ -71,9 +63,12 @@ namespace Wuziqi.UI
             if (portrait != null)
                 portrait.preserveAspect = true;
 
-            // 加载当前选中猫的帧动画
-            string catName = GetCurrentCatName();
-            LoadCatFrames(catName);
+            // 鍔犺浇榛樿甯у姩鐢?            LoadFrames("idle", Mood.Idle);
+            LoadFrames("thinking", Mood.Thinking);
+            LoadFrames("smug", Mood.Smug);
+            LoadFrames("worried", Mood.Worried);
+            LoadFrames("celebrate", Mood.Celebrate);
+            LoadFrames("defeat", Mood.Defeat);
 
             SetMood(Mood.Idle);
             ShowBubble(PickLine(OpeningLinesForStreak(WinStreak.Get())), 3f, true);
@@ -95,95 +90,59 @@ namespace Wuziqi.UI
                 CatManager.Instance.OnCatChanged -= OnCatChanged;
         }
 
-        // ========== 二维帧数据加载 ==========
+        // ---------- 甯у姞杞?----------
 
-        /// <summary>
-        /// 加载指定猫的所有表情帧。路径：Resources/CatFrames/{catName}/{mood}
-        /// </summary>
-        private void LoadCatFrames(string catName)
+        private void LoadFrames(string moodName, Mood mood)
         {
-            if (string.IsNullOrEmpty(catName)) return;
-            if (catFrames.ContainsKey(catName)) return; // 已加载过
-
-            var moodMap = new Dictionary<Mood, Sprite[]>();
-            foreach (Mood mood in System.Enum.GetValues(typeof(Mood)))
+            // 灏濊瘯鍔犺浇褰撳墠鐚殑甯э紝澶辫触鍒欏洖閫€鍒伴粯璁ゅ抚
+            string path = framesResourcePath + "/" + moodName;
+            var sprites = Resources.LoadAll<Sprite>(path);
+            if (sprites == null || sprites.Length == 0)
             {
-                string path = framesResourceRoot + "/" + catName + "/" + mood.ToString().ToLower();
-                var sprites = Resources.LoadAll<Sprite>(path);
-                if (sprites != null && sprites.Length > 0)
-                {
-                    var list = new List<Sprite>(sprites);
-                    list.Sort((a, b) => a.name.CompareTo(b.name));
-                    moodMap[mood] = list.ToArray();
-                }
+                // 鍥為€€锛氫笉甯﹀瓙鐩綍
+                sprites = Resources.LoadAll<Sprite>(moodName);
             }
-            catFrames[catName] = moodMap;
-            currentCatName = catName;
-        }
 
-        /// <summary>
-        /// 获取指定猫的指定表情帧数组
-        /// </summary>
-        private Sprite[] GetCatMoodFrames(string catName, Mood mood)
-        {
-            if (catFrames.TryGetValue(catName, out var moodMap))
+            if (sprites != null && sprites.Length > 0)
             {
-                if (moodMap.TryGetValue(mood, out var frames))
-                    return frames;
+                // 鎸夊悕绉版帓搴忕‘淇濋『搴忔纭?                var list = new List<Sprite>(sprites);
+                list.Sort((a, b) => a.name.CompareTo(b.name));
+                moodFrames[mood] = list.ToArray();
             }
-            return null;
         }
-
-        private string GetCurrentCatName()
-        {
-            if (CatManager.Instance != null && CatManager.Instance.Selected != null)
-                return CatManager.Instance.Selected.catName;
-            return "小白"; // 默认
-        }
-
-        // ========== 猫切换 ==========
 
         private void OnCatChanged(int newIndex)
         {
             var cat = CatManager.Instance.GetCat(newIndex);
-            if (cat == null) return;
+            if (cat != null)
+            {
+                // 閲嶆柊鍔犺浇璇ョ尗鐨勫抚锛堝鏋滄湁涓撳睘甯х洰褰曪級
+                LoadFrames("idle", Mood.Idle);
+                LoadFrames("thinking", Mood.Thinking);
+                LoadFrames("smug", Mood.Smug);
+                LoadFrames("worried", Mood.Worried);
+                LoadFrames("celebrate", Mood.Celebrate);
+                LoadFrames("defeat", Mood.Defeat);
 
-            string newCatName = cat.catName;
-
-            // 确保新猫的帧已加载
-            if (!catFrames.ContainsKey(newCatName))
-                LoadCatFrames(newCatName);
-
-            currentCatName = newCatName;
-
-            // 切猫后直接播放新猫的待机动画
+                if (portrait != null && cat.portrait != null)
+                    portrait.sprite = cat.portrait;
+            }
             SetMood(Mood.Idle);
         }
 
-        // ========== 帧动画播放 ==========
+        // ---------- 甯у姩鐢绘挱鏀?----------
 
         private void SetMood(Mood mood, float hold = 0f)
         {
             currentMood = mood;
 
-            if (animRoutine != null)
+            // 鍋滄鏃у姩鐢?            if (animRoutine != null)
                 StopCoroutine(animRoutine);
 
-            // 从二维数据中取当前猫的对应表情帧
-            var frames = GetCatMoodFrames(currentCatName, mood);
-            if (frames != null && frames.Length > 0)
-            {
+            // 鎾斁鏂板姩鐢?            if (moodFrames.TryGetValue(mood, out var frames) && frames.Length > 0)
                 animRoutine = StartCoroutine(PlayFrameAnimation(frames));
-            }
             else if (portrait != null && fallbackPortrait != null)
-            {
-                // 没有帧动画，显示立绘
-                var cat = CatManager.Instance != null ? CatManager.Instance.Selected : null;
-                if (cat != null && cat.portrait != null)
-                    portrait.sprite = cat.portrait;
-                else
-                    portrait.sprite = fallbackPortrait;
-            }
+                portrait.sprite = fallbackPortrait;
 
             if (hold > 0f) moodHoldUntil = Time.time + hold;
         }
@@ -212,7 +171,7 @@ namespace Wuziqi.UI
             SetMood(mood);
         }
 
-        // ========== 回调 ==========
+        // ---------- 鍥炶皟 ----------
 
         private void OnStonePlaced(Vector2Int cell, StoneColor color)
         {
@@ -297,9 +256,12 @@ namespace Wuziqi.UI
                 SetMood(pendingMood);
                 hasPending = false;
             }
+
+            // 淇濇寔 Image 鏄剧ず褰撳墠甯?            if (portrait != null && portrait.sprite == null && fallbackPortrait != null)
+                portrait.sprite = fallbackPortrait;
         }
 
-        // ========== 气泡 ==========
+        // ---------- 姘旀场 ----------
 
         public void ShowBubble(string text, float duration = 2.5f, bool force = false)
         {
@@ -319,7 +281,7 @@ namespace Wuziqi.UI
             lastBubbleEnd = Time.time;
         }
 
-        // ========== 工具 ==========
+        // ---------- 宸ュ叿 ----------
 
         private static string PickLine(string[] lines)
         {
@@ -339,9 +301,10 @@ namespace Wuziqi.UI
             if (streakText == null) return;
             int streak = WinStreak.Get();
             streakText.gameObject.SetActive(streak > 0);
-            streakText.text = $"\u8fde\u80dc \u00d7{streak}";
+            streakText.text = $"杩炶儨 脳{streak}";
         }
 
+        /// <summary>杩炶儨璁板綍锛圥layerPrefs 鎸佷箙鍖栵級銆?/summary>
         public static class WinStreak
         {
             private const string Key = "Wuziqi.WinStreak";
@@ -364,3 +327,4 @@ namespace Wuziqi.UI
         }
     }
 }
+

@@ -46,3 +46,8 @@ screenshots/
 # Unity Crashlytics
 sysinfo.txt
 crashlytics-build.properties
+
+# Unity Packages cache
+Packages/com.unity.burst/
+Packages/com.unity.mathematics/
+Packages/com.unity.collections/

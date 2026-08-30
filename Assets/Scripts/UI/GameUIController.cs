@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,9 +17,14 @@ namespace Wuziqi.UI
         [SerializeField] private Button restartButton;
         [SerializeField] private Button playAgainButton;
         [SerializeField] private Button reviewButton;
+        [SerializeField] private Button historyButton;
+        [SerializeField] private Button replayButton;
         [SerializeField] private GameObject resultDialog;
         [SerializeField] private TMP_Text resultText;
         [SerializeField] private TMP_Text turnText;
+
+        [Header("体力不足弹窗")]
+        [SerializeField] private EnergyInsufficientPanel energyInsufficientPanel;
 
         [Header("音频")]
         [SerializeField] private AudioSource sfxSource;
@@ -49,6 +54,8 @@ namespace Wuziqi.UI
             restartButton.onClick.AddListener(OnRestartClicked);
             if (playAgainButton != null) playAgainButton.onClick.AddListener(OnRestartClicked);
             if (reviewButton != null) reviewButton.onClick.AddListener(OnReviewClicked);
+            if (historyButton != null) historyButton.onClick.AddListener(OnHistoryClicked);
+            if (replayButton != null) replayButton.onClick.AddListener(OnReplayFromResult);
 
             resultDialog.SetActive(false);
             UpdateTurnText(gameManager.IsPlayerTurn);
@@ -99,12 +106,18 @@ namespace Wuziqi.UI
                             : (playerWon ? "妙手连连 · 你赢了" : "棋差一着 · 再战一局？");
             PlayOneShot(result == GameResult.Draw ? drawClip : (playerWon ? winClip : loseClip));
 
-            // 胜利给仙喵币
+            // 胜利给仙喵币（基础 + 连胜加成）
             if (playerWon && CatManager.Instance != null && CatManager.Instance.Selected != null
                 && EconomyManager.Instance != null)
             {
-                int reward = CatManager.Instance.Selected.winReward;
-                EconomyManager.Instance.AddCoins(reward);
+                int baseReward = CatManager.Instance.Selected.winReward;
+                int streak = CharacterController.WinStreak.Get();
+                int streakBonus = Mathf.Min(streak * 5, 50); // 每连胜+5，上限+50
+                int totalReward = baseReward + streakBonus;
+                EconomyManager.Instance.AddCoins(totalReward);
+
+                if (streakBonus > 0)
+                    Debug.Log($"[GameUIController] 金币奖励: 基础{baseReward} + 连胜加成{streakBonus} = {totalReward}");
             }
 
             StartCoroutine(ShowDialogAfter(0.7f));
@@ -127,7 +140,14 @@ namespace Wuziqi.UI
         private void UpdateTurnText(bool isPlayerTurn)
         {
             if (turnText == null || gameManager.IsGameOver) return;
-            turnText.text = isPlayerTurn ? "你的回合" : "AI 思索中…";
+            if (isPlayerTurn)
+                turnText.text = "你的回合";
+            else
+            {
+                string catName = CatManager.Instance != null && CatManager.Instance.Selected != null
+                    ? CatManager.Instance.Selected.catName : "猫猫";
+                turnText.text = $"{catName} 思索中…";
+            }
         }
 
         // ---------- 按钮 ----------
@@ -152,7 +172,16 @@ namespace Wuziqi.UI
         private void OnRestartClicked()
         {
             PlayOneShot(clickClip);
-            gameManager.Restart();
+            if (!gameManager.TryRestart())
+            {
+                // 体力不足，弹出提示
+                if (energyInsufficientPanel != null)
+                {
+                    float waitSeconds = EconomyManager.Instance != null
+                        ? EconomyManager.Instance.GetNextRecoverySeconds() : 60f;
+                    energyInsufficientPanel.Show(waitSeconds);
+                }
+            }
         }
 
         /// <summary>查看棋盘：仅关闭结算弹窗，保留终局局面。</summary>
@@ -181,6 +210,29 @@ namespace Wuziqi.UI
         private void PlayOneShot(AudioClip clip)
         {
             if (sfxSource != null && clip != null) sfxSource.PlayOneShot(clip);
+        }
+                private void OnHistoryClicked()
+        {
+            PlayOneShot(clickClip);
+            HistoryPanel hp = FindObjectOfType<HistoryPanel>();
+            if (hp != null) hp.Show();
+        }
+
+        private void OnReplayFromResult()
+        {
+            PlayOneShot(clickClip);
+            var records = GameRecordManager.Instance?.Records;
+            if (records == null || records.Count == 0)
+            {
+                Debug.LogWarning("[GameUIController] No records to replay");
+                return;
+            }
+            ReplayPanel rp = FindObjectOfType<ReplayPanel>();
+            if (rp != null)
+            {
+                resultDialog.SetActive(false);
+                rp.StartReplay(records[0]);
+            }
         }
     }
 }

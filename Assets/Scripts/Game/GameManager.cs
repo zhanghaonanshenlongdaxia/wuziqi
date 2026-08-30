@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +6,7 @@ using Wuziqi.Core;
 
 namespace Wuziqi.Game
 {
-    /// <summary>回合流程：玩家执黑先行，AI 白后手；管理落子/悔棋/重开/结束事件。</summary>
+    /// <summary>回合流程：玩家执黑先行，AI 白后手；管理落子/悔棋/重开/结束事件�?/summary>
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance { get; private set; }
@@ -51,11 +51,14 @@ namespace Wuziqi.Game
             if (!CanPlayerPlaceNow) return;
             if (!Board.TryPlace(x, y, playerColor)) return;
             StonePlaced?.Invoke(new Vector2Int(x, y), playerColor);
+            if (Board.MoveCount == 1)
+                GameRecordManager.Instance?.StartRecording(playerColor);
+            GameRecordManager.Instance?.RecordMove(x, y, playerColor);
             if (FinishIfOver()) return;
             BeginAITurn();
         }
 
-        /// <summary>直接落子并广播事件（不驱动回合流程；用于演示/回放布局）。</summary>
+        /// <summary>直接落子并广播事件（不驱动回合流程；用于演示/回放布局）�?/summary>
         public void PlaceStoneDirect(int x, int y, StoneColor color)
         {
             if (!Board.TryPlace(x, y, color)) return;
@@ -75,8 +78,11 @@ namespace Wuziqi.Game
             IsAIThinking = true;
             yield return new WaitForSeconds(UnityEngine.Random.Range(aiThinkTimeMin, aiThinkTimeMax));
 
-            StoneColor aiColor = GomokuAI.Other(playerColor);
-            Vector2Int move = GomokuAI.FindBestMove(Board, aiColor, rng);
+            StoneColor aiColor = GomokuAIAdvanced.Other(playerColor);
+            CatProfile cat = CatManager.Instance?.Selected;
+            int searchDepth = cat?.aiSearchDepth ?? 3;
+            float scoreMultiplier = cat?.aiScoreMultiplier ?? 1.0f;
+            Vector2Int move = GomokuAIAdvanced.FindBestMove(Board, aiColor, searchDepth, scoreMultiplier, rng);
             IsAIThinking = false;
             aiRoutine = null;
 
@@ -86,6 +92,7 @@ namespace Wuziqi.Game
                 yield break;
             }
             StonePlaced?.Invoke(move, aiColor);
+            GameRecordManager.Instance?.RecordMove(move.x, move.y, aiColor);
             if (FinishIfOver()) yield break;
 
             IsPlayerTurn = true;
@@ -108,10 +115,11 @@ namespace Wuziqi.Game
             IsPlayerTurn = false;
             IsAIThinking = false;
             Result = result;
+            GameRecordManager.Instance?.FinishRecording(result);
             GameEnded?.Invoke(result, winLine);
         }
 
-        /// <summary>悔棋：撤销到玩家再次行动（通常撤 AI+玩家各一手）。</summary>
+        /// <summary>悔棋：撤销到玩家再次行动（通常�?AI+玩家各一手）�?/summary>
         public void Undo()
         {
             if (!CanUndo) return;
@@ -144,5 +152,17 @@ namespace Wuziqi.Game
             BoardReset?.Invoke();
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }
+
+        /// <summary>尝试重开一局，先扣体力。体力不足返回false�?/summary>
+        public bool TryRestart()
+        {
+            if (EconomyManager.Instance != null && !EconomyManager.Instance.TryStartGame())
+                return false;
+            Restart();
+            return true;
+        }
     }
 }
+
+
+

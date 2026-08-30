@@ -33,6 +33,9 @@ namespace Wuziqi.UI
         [SerializeField] private Sprite sequentialIcon;
         [SerializeField] private Sprite shuffleIcon;
         [SerializeField] private Sprite singleIcon;
+        [SerializeField] private Image playPauseIcon;
+        [SerializeField] private Sprite playIcon;
+        [SerializeField] private Sprite pauseIcon;
 
         private static readonly Dictionary<PlayMode, string> ModeLabels = new Dictionary<PlayMode, string>
         {
@@ -91,6 +94,15 @@ namespace Wuziqi.UI
             source.clip = t.clip;
             source.Play();
             if (titleText != null) titleText.text = $"♪ {t.title}";
+            UpdatePlayPauseIcon();
+        }
+
+        private void UpdatePlayPauseIcon()
+        {
+            if (playPauseIcon == null) return;
+            bool playing = source != null && source.isPlaying;
+            if (playing && pauseIcon != null) playPauseIcon.sprite = pauseIcon;
+            else if (!playing && playIcon != null) playPauseIcon.sprite = playIcon;
         }
 
         public void TogglePause()
@@ -98,6 +110,7 @@ namespace Wuziqi.UI
             PlayClick();
             if (source.isPlaying) source.Pause();
             else source.UnPause();
+            UpdatePlayPauseIcon();
         }
 
         public void PlayNext()

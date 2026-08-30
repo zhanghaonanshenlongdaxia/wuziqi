@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -514,6 +514,53 @@ namespace Wuziqi.UI
             hoverPreview.gameObject.SetActive(show);
         }
 
+        
+        // ========== Replay API ==========
+
+        /// <summary>
+        /// Place a stone directly (for replay).
+        /// </summary>
+        public void PlaceStoneDirect(int x, int y, StoneColor color)
+        {
+            Vector2Int cell = new Vector2Int(x, y);
+            if (stones.ContainsKey(cell)) return;
+            OnStonePlaced(cell, color);
+        }
+
+        /// <summary>
+        /// Remove the last stone placed (for replay step back).
+        /// </summary>
+        public void RemoveLastStone()
+        {
+            if (stones.Count == 0) return;
+            KeyValuePair<Vector2Int, Image> last = default;
+            foreach (var kvp in stones) last = kvp;
+            if (last.Value != null) Destroy(last.Value.gameObject);
+            stones.Remove(last.Key);
+            UpdateLastMarker();
+        }
+
+        /// <summary>
+        /// Clear all stones (for replay reset).
+        /// </summary>
+        public void ClearAllStones()
+        {
+            foreach (var kvp in stones)
+                if (kvp.Value != null) Destroy(kvp.Value.gameObject);
+            stones.Clear();
+            if (lastMarker != null) lastMarker.gameObject.SetActive(false);
+            if (winLine != null) winLine.gameObject.SetActive(false);
+        }
+
+        private void UpdateLastMarker()
+        {
+            if (lastMarker == null) return;
+            if (stones.Count == 0) { lastMarker.gameObject.SetActive(false); return; }
+            KeyValuePair<Vector2Int, Image> last = default;
+            foreach (var kvp in stones) last = kvp;
+            lastMarker.rectTransform.anchoredPosition = CellToLocal(last.Key.x, last.Key.y);
+            lastMarker.gameObject.SetActive(true);
+        }
         // ---------- 工具 ----------
 
         private static Sprite MakeCircleSprite()

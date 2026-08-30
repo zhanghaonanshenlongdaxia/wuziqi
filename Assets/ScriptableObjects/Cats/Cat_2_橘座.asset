@@ -14,11 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   catName: "\u6A58\u5EA7"
   description: "\u6175\u61D2\u7684\u6A58\u5EA7\u5927\u4FA0\uFF0C\u7A33\u4E2D\u5E26\u76AE\u3002"
-  portrait: {fileID: 0}
+  portrait: {fileID: 21300000, guid: 7e0b06d9ef78a694681250bd270f36bb, type: 3}
   difficulty: 2
-  aiSearchDepth: 4
-  aiScoreMultiplier: 1.1
+  aiSearchDepth: 3
+  aiScoreMultiplier: 0.9
   winReward: 15
   unlockType: 0
   coinCost: 0
-  framesDir: idle
+  framesDir: 橘座
+
