@@ -9,9 +9,8 @@ using Wuziqi.Game;
 namespace Wuziqi.UI
 {
     /// <summary>
-    /// 猫仙人对手：运行时帧动画（直接换Sprite）、对话气泡、局势情绪联动、连胜记录。
-    /// 每只猫有独立的帧动画资源和台词性格，切换猫时自动加载对应动画和台词。
-    /// 不依赖 Animator / UnityEditor API，打包安全。
+    /// 猫仙人对手：Animator 帧动画 + 对话气泡 + 局势情绪联动 + 连胜记录。
+    /// 每只猫有独立的台词性格，切换猫时自动加载对应台词。
     /// </summary>
     public class CharacterController : MonoBehaviour
     {
@@ -19,15 +18,10 @@ namespace Wuziqi.UI
 
         [Header("引用")]
         [SerializeField] private GameManager gameManager;
-        [SerializeField] private Image portrait;
+        [SerializeField] private SpriteAnimator spriteAnimator;
         [SerializeField] private GameObject bubbleRoot;
         [SerializeField] private TMP_Text bubbleText;
         [SerializeField] private TMP_Text streakText;
-        [SerializeField] private Sprite fallbackPortrait;
-
-        [Header("动画")]
-        [SerializeField, Range(2f, 15f)] private float frameRate = 6f;
-        [SerializeField] private string framesResourceRoot = "CatFrames";
 
         // ========== 每只猫的台词数据 ==========
 
@@ -45,7 +39,6 @@ namespace Wuziqi.UI
         {
             catDialogue = new Dictionary<string, CatLines>();
 
-            // ====== 小白：天真可爱，软萌新手 ======
             catDialogue["小白"] = new CatLines
             {
                 opening = new[] { "喵～请多指教！", "我会努力的！虽然不太会下棋…" },
@@ -61,7 +54,6 @@ namespace Wuziqi.UI
                 draw = new[] { "平局？也挺好的～", "和棋也是一种缘分呢！" },
             };
 
-            // ====== 橘座：慵懒吃货，稳中带皮 ======
             catDialogue["橘座"] = new CatLines
             {
                 opening = new[] { "嗯…先让本座打个哈欠…", "来吧，本座刚吃饱，正好消化一下。" },
@@ -77,12 +69,11 @@ namespace Wuziqi.UI
                 draw = new[] { "平局？本座无所谓，反正有鱼吃。", "和棋也好，本座正好困了。" },
             };
 
-            // ====== 黑炭：冷酷侠客，惜字如金 ======
             catDialogue["黑炭"] = new CatLines
             {
                 opening = new[] { "…出招。", "不必多言，落子吧。" },
                 openingStreak3 = new[] { "三场…尚可。", "连胜？不过是理所当然。" },
-                openingStreak5 = new[] { "五连胜…无趣。", "你的棋，还不够看。" },
+                openingStreak5 = new[] { "…五连胜？无趣。", "你的棋，还不够看。" },
                 thinking = new[] { "…", "嗯。", "有意思。" },
                 aiStrong = new[] { "…中。", "结束了。" },
                 aiGood = new[] { "…还行。", "嗯。" },
@@ -93,7 +84,6 @@ namespace Wuziqi.UI
                 draw = new[] { "…平局。", "哼。" },
             };
 
-            // ====== 花斑：活泼调皮，灵动多变 ======
             catDialogue["花斑"] = new CatLines
             {
                 opening = new[] { "来来来！花斑大侠在此！", "准备好了吗？花斑要出招啦～" },
@@ -109,7 +99,6 @@ namespace Wuziqi.UI
                 draw = new[] { "平局？花斑觉得挺刺激的！", "再来一局！花斑还没玩够！" },
             };
 
-            // ====== 银渐层：高贵优雅，深思熟虑 ======
             catDialogue["银渐层"] = new CatLines
             {
                 opening = new[] { "请赐教。", "愿与阁下切磋一二。" },
@@ -125,7 +114,6 @@ namespace Wuziqi.UI
                 draw = new[] { "平局…倒也是个有趣的结果。", "此局旗鼓相当，改日再战。" },
             };
 
-            // ====== 玄猫：威严长老，雷厉风行 ======
             catDialogue["玄猫"] = new CatLines
             {
                 opening = new[] { "年轻人，老朽奉陪。", "棋盘之上，无长幼之分。" },
@@ -141,7 +129,6 @@ namespace Wuziqi.UI
                 draw = new[] { "平局？倒是难得。", "此局旗鼓相当，改日再较高下。" },
             };
 
-            // ====== 仙喵长老：仙风道骨，亦庄亦谐 ======
             catDialogue["仙喵长老"] = new CatLines
             {
                 opening = new[] { "喵～施主，贫猫有礼了。", "棋盘如天地，落子如布阵。" },
@@ -160,14 +147,14 @@ namespace Wuziqi.UI
 
         // ========== 运行时状态 ==========
 
-        private Dictionary<string, Dictionary<Mood, Sprite[]>> catFrames = new Dictionary<string, Dictionary<Mood, Sprite[]>>();
+        private Animator catAnimator;
+        private Dictionary<string, AnimatorOverrideController> overrideControllers;
         private string currentCatName;
         private CatLines currentLines;
         private Mood currentMood = Mood.Idle;
         private Mood pendingMood;
         private bool hasPending;
         private float moodHoldUntil;
-        private Coroutine animRoutine;
         private Coroutine bubbleRoutine;
         private float lastBubbleEnd = -10f;
         private const float BubbleCooldown = 2.5f;
@@ -188,13 +175,24 @@ namespace Wuziqi.UI
             if (bubbleRoot != null) bubbleRoot.SetActive(false);
             UpdateStreakText();
 
-            if (portrait != null)
-                portrait.preserveAspect = true;
+            // 初始化 Animator（在 SpriteAnimator 所在的 GameObject 上）
+            if (spriteAnimator != null)
+                catAnimator = spriteAnimator.GetComponent<Animator>();
 
-            // 加载当前猫的帧动画
-            string catName = GetCurrentCatName();
-            LoadCatFrames(catName);
-            currentLines = GetLines(catName);
+            // 加载所有猫的 OverrideController
+            overrideControllers = new Dictionary<string, AnimatorOverrideController>();
+            string[] catNames = { "小白", "橘座", "黑炭", "花斑", "银渐层", "玄猫", "仙喵长老" };
+            foreach (var catName in catNames)
+            {
+                var oc = Resources.Load<AnimatorOverrideController>("Anim/" + catName);
+                if (oc != null) overrideControllers[catName] = oc;
+            }
+
+            // 加载当前猫
+            string cat = GetCurrentCatName();
+            currentCatName = cat;
+            currentLines = GetLines(cat);
+            LoadCatAndApply(cat);
 
             SetMood(Mood.Idle);
             ShowBubble(PickLine(currentLines.opening), 3f, true);
@@ -222,43 +220,9 @@ namespace Wuziqi.UI
         {
             if (catDialogue != null && catDialogue.TryGetValue(catName, out var lines))
                 return lines;
-            // 回退到小白
             if (catDialogue != null && catDialogue.TryGetValue("小白", out var fallback))
                 return fallback;
             return default;
-        }
-
-        // ========== 二维帧数据加载 ==========
-
-        private void LoadCatFrames(string catName)
-        {
-            if (string.IsNullOrEmpty(catName)) return;
-            if (catFrames.ContainsKey(catName)) return;
-
-            var moodMap = new Dictionary<Mood, Sprite[]>();
-            foreach (Mood mood in System.Enum.GetValues(typeof(Mood)))
-            {
-                string path = framesResourceRoot + "/" + catName + "/" + mood.ToString().ToLower();
-                var sprites = Resources.LoadAll<Sprite>(path);
-                if (sprites != null && sprites.Length > 0)
-                {
-                    var list = new List<Sprite>(sprites);
-                    list.Sort((a, b) => a.name.CompareTo(b.name));
-                    moodMap[mood] = list.ToArray();
-                }
-            }
-            catFrames[catName] = moodMap;
-            currentCatName = catName;
-        }
-
-        private Sprite[] GetCatMoodFrames(string catName, Mood mood)
-        {
-            if (catFrames.TryGetValue(catName, out var moodMap))
-            {
-                if (moodMap.TryGetValue(mood, out var frames))
-                    return frames;
-            }
-            return null;
         }
 
         private string GetCurrentCatName()
@@ -275,55 +239,50 @@ namespace Wuziqi.UI
             var cat = CatManager.Instance.GetCat(newIndex);
             if (cat == null) return;
 
-            string newCatName = cat.catName;
+            currentCatName = cat.catName;
+            currentLines = GetLines(currentCatName);
+            LoadCatAndApply(currentCatName);
 
-            if (!catFrames.ContainsKey(newCatName))
-                LoadCatFrames(newCatName);
-
-            currentCatName = newCatName;
-            currentLines = GetLines(newCatName);
-
-            // 切猫后直接播放新猫的待机动画
             SetMood(Mood.Idle);
         }
 
-        // ========== 帧动画播放 ==========
+        // ========== 资源加载 ==========
+
+        private void LoadCatAndApply(string catName)
+        {
+            // 切换 OverrideController
+            if (overrideControllers.TryGetValue(catName, out var oc) && catAnimator != null)
+                catAnimator.runtimeAnimatorController = oc;
+
+            if (spriteAnimator == null) return;
+
+            // 加载帧数据到 SpriteAnimator
+            string[] moodNames = { "idle", "thinking", "smug", "celebrate", "defeat", "worried" };
+            for (int i = 0; i < moodNames.Length; i++)
+            {
+                string path = "CatFrames/" + catName + "/" + moodNames[i];
+                var sprites = Resources.LoadAll<Sprite>(path);
+                if (sprites != null && sprites.Length > 0)
+                {
+                    var sorted = new System.Collections.Generic.List<Sprite>(sprites);
+                    sorted.Sort((a, b) => a.name.CompareTo(b.name));
+                    spriteAnimator.SetFrames(i, sorted.ToArray());
+                }
+            }
+        }
+
+        // ========== Animator 动画控制 ==========
 
         private void SetMood(Mood mood, float hold = 0f)
         {
             currentMood = mood;
 
-            if (animRoutine != null)
-                StopCoroutine(animRoutine);
-
-            var frames = GetCatMoodFrames(currentCatName, mood);
-            if (frames != null && frames.Length > 0)
-            {
-                animRoutine = StartCoroutine(PlayFrameAnimation(frames));
-            }
-            else if (portrait != null && fallbackPortrait != null)
-            {
-                var cat = CatManager.Instance != null ? CatManager.Instance.Selected : null;
-                if (cat != null && cat.portrait != null)
-                    portrait.sprite = cat.portrait;
-                else
-                    portrait.sprite = fallbackPortrait;
-            }
+            if (spriteAnimator != null)
+                spriteAnimator.SetMood((int)mood);
+            else if (catAnimator != null && catAnimator.runtimeAnimatorController != null)
+                catAnimator.SetInteger("Mood", (int)mood);
 
             if (hold > 0f) moodHoldUntil = Time.time + hold;
-        }
-
-        private IEnumerator PlayFrameAnimation(Sprite[] frames)
-        {
-            float interval = 1f / frameRate;
-            int index = 0;
-            while (true)
-            {
-                if (portrait != null)
-                    portrait.sprite = frames[index];
-                index = (index + 1) % frames.Length;
-                yield return new WaitForSeconds(interval);
-            }
         }
 
         private void TrySetMood(Mood mood)
