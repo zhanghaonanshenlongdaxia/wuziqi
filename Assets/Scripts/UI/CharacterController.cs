@@ -10,7 +10,7 @@ namespace Wuziqi.UI
 {
     /// <summary>
     /// 猫仙人对手：运行时帧动画（直接换Sprite）、对话气泡、局势情绪联动、连胜记录。
-    /// 每只猫有独立的帧动画资源，切换猫时自动加载对应动画。
+    /// 每只猫有独立的帧动画资源和台词性格，切换猫时自动加载对应动画和台词。
     /// 不依赖 Animator / UnityEditor API，打包安全。
     /// </summary>
     public class CharacterController : MonoBehaviour
@@ -29,22 +29,140 @@ namespace Wuziqi.UI
         [SerializeField, Range(2f, 15f)] private float frameRate = 6f;
         [SerializeField] private string framesResourceRoot = "CatFrames";
 
-        [Header("台词库")]
-        [SerializeField, TextArea] private string[] openingLines = { "哼，本仙猫让你三子。", "来来来，本座倒要看看你的棋力。" };
-        [SerializeField, TextArea] private string[] openingLinesStreak3 = { "连胜三场，尾巴要翘上天了？" };
-        [SerializeField, TextArea] private string[] openingLinesStreak5 = { "又是你？！这次本仙猫绝不留情！" };
-        [SerializeField, TextArea] private string[] thinkingLines = { "让我想想…", "唔…这步棋有玄机…" };
-        [SerializeField, TextArea] private string[] aiStrongLines = { "接招！", "看好了，这就是仙家的实力～" };
-        [SerializeField, TextArea] private string[] aiGoodLines = { "嘿嘿，妙不可言～", "本座的棋，天衣无缝。" };
-        [SerializeField, TextArea] private string[] playerThreatBigLines = { "不、不妙…", "这不可能！" };
-        [SerializeField, TextArea] private string[] playerThreatLines = { "咦？有两下子。", "小瞧你了…" };
-        [SerializeField, TextArea] private string[] aiWinLines = { "承让承让～喵", "本仙猫宝刀未老！" };
-        [SerializeField, TextArea] private string[] playerWinLines = { "哼！今日状态不佳，不算不算。", "本座…只是让着你！" };
-        [SerializeField, TextArea] private string[] drawLines = { "平局？有趣，你有些长进。" };
+        // ========== 每只猫的台词数据 ==========
 
-        // ========== 二维帧数据：[猫名][表情] = Sprite[] ==========
+        private struct CatLines
+        {
+            public string[] opening, openingStreak3, openingStreak5;
+            public string[] thinking, aiStrong, aiGood;
+            public string[] threatBig, threat;
+            public string[] aiWin, playerWin, draw;
+        }
+
+        private Dictionary<string, CatLines> catDialogue;
+
+        private void InitDialogue()
+        {
+            catDialogue = new Dictionary<string, CatLines>();
+
+            // ====== 小白：天真可爱，软萌新手 ======
+            catDialogue["小白"] = new CatLines
+            {
+                opening = new[] { "喵～请多指教！", "我会努力的！虽然不太会下棋…" },
+                openingStreak3 = new[] { "赢了三场？我在做梦吧…", "好开心！尾巴摇得好快！" },
+                openingStreak5 = new[] { "五连胜！我不是在做梦吧？！", "今天的我好像特别厉害！" },
+                thinking = new[] { "嗯…这步棋好难呀…", "让我想想…猫咪的直觉告诉我…", "呜…脑袋要冒烟了…" },
+                aiStrong = new[] { "嘿嘿，好像下了步好棋！", "这步棋连我自己都没想到！" },
+                aiGood = new[] { "这样下应该可以吧？", "虽然不知道对不对，但感觉不错～" },
+                threatBig = new[] { "呜呜…好像下错了…", "好厉害…我不会输吧？" },
+                threat = new[] { "咦？这步棋好厉害…", "你的棋艺进步好快呀！" },
+                aiWin = new[] { "赢了！耶耶耶！", "太好了太好了～喵！" },
+                playerWin = new[] { "呜…你赢了…好厉害…", "下次我一定会更努力的！" },
+                draw = new[] { "平局？也挺好的～", "和棋也是一种缘分呢！" },
+            };
+
+            // ====== 橘座：慵懒吃货，稳中带皮 ======
+            catDialogue["橘座"] = new CatLines
+            {
+                opening = new[] { "嗯…先让本座打个哈欠…", "来吧，本座刚吃饱，正好消化一下。" },
+                openingStreak3 = new[] { "三连胜？不错不错，值得加个鸡腿。", "本座的尾巴已经翘到天上去了～" },
+                openingStreak5 = new[] { "五连胜？本座的威名已传遍天下！", "别急，让本座先舔舔爪子。" },
+                thinking = new[] { "唔…这步棋得想想…肚子有点饿…", "让本座用吃鱼的智慧想想…", "嗯…困了…但棋不能输…" },
+                aiStrong = new[] { "嘿嘿，本座可不是白吃那么多鱼的～", "这步棋，稳如老猫。" },
+                aiGood = new[] { "还行吧，本座随手一下。", "嗯，本座的肚子和棋艺一样圆满。" },
+                threatBig = new[] { "嘶…这棋有点棘手…", "本座的鱼干可能要保不住了…" },
+                threat = new[] { "哟，有两下子嘛。", "嗯？你这步棋有点意思。" },
+                aiWin = new[] { "承让承让，本座要去睡午觉了。", "赢了～今晚加餐！" },
+                playerWin = new[] { "嗯…本座只是太饱了反应慢。", "下次本座空腹来，你就没机会了。" },
+                draw = new[] { "平局？本座无所谓，反正有鱼吃。", "和棋也好，本座正好困了。" },
+            };
+
+            // ====== 黑炭：冷酷侠客，惜字如金 ======
+            catDialogue["黑炭"] = new CatLines
+            {
+                opening = new[] { "…出招。", "不必多言，落子吧。" },
+                openingStreak3 = new[] { "三场…尚可。", "连胜？不过是理所当然。" },
+                openingStreak5 = new[] { "五连胜…无趣。", "你的棋，还不够看。" },
+                thinking = new[] { "…", "嗯。", "有意思。" },
+                aiStrong = new[] { "…中。", "结束了。" },
+                aiGood = new[] { "…还行。", "嗯。" },
+                threatBig = new[] { "…!", "这步棋…有破绽。" },
+                threat = new[] { "…哦？", "有点意思。" },
+                aiWin = new[] { "…承让。", "你的棋…还差得远。" },
+                playerWin = new[] { "…不错。", "下次。" },
+                draw = new[] { "…平局。", "哼。" },
+            };
+
+            // ====== 花斑：活泼调皮，灵动多变 ======
+            catDialogue["花斑"] = new CatLines
+            {
+                opening = new[] { "来来来！花斑大侠在此！", "准备好了吗？花斑要出招啦～" },
+                openingStreak3 = new[] { "三连胜！花斑果然是天才！", "哈哈哈，花斑的爪子今天特别灵活！" },
+                openingStreak5 = new[] { "五连胜！花斑要上天啦！", "有没有人来挑战花斑大侠？" },
+                thinking = new[] { "嗯…花斑在想一个绝妙的招数！", "等等，花斑有个好主意！", "左思右想…不如出其不意！" },
+                aiStrong = new[] { "哈哈！这招花斑练了好久！", "看到没？这就是花斑的厉害！" },
+                aiGood = new[] { "不错不错，花斑今天手感火热！", "嘿嘿，这步棋花斑很满意～" },
+                threatBig = new[] { "哎呀！这步棋花斑没料到！", "糟了糟了…花斑要认真了！" },
+                threat = new[] { "咦？你也会这招？", "不错嘛，能逼花斑用这招！" },
+                aiWin = new[] { "花斑赢啦！耶！", "哈哈，花斑大侠果然厉害！" },
+                playerWin = new[] { "哼！花斑今天状态不好！", "下次花斑一定赢回来！" },
+                draw = new[] { "平局？花斑觉得挺刺激的！", "再来一局！花斑还没玩够！" },
+            };
+
+            // ====== 银渐层：高贵优雅，深思熟虑 ======
+            catDialogue["银渐层"] = new CatLines
+            {
+                opening = new[] { "请赐教。", "愿与阁下切磋一二。" },
+                openingStreak3 = new[] { "连胜三场，尚在预料之中。", "不过是理所当然的结果。" },
+                openingStreak5 = new[] { "五连胜？本猫的棋艺无需证明。", "无聊…有谁能与本猫一战？" },
+                thinking = new[] { "容本猫思量片刻…", "此局…需从长计议。", "有趣，这步棋值得深思。" },
+                aiStrong = new[] { "此招已在意料之中。", "本猫的每一步，皆有深意。" },
+                aiGood = new[] { "尚可。", "本猫的棋路，岂是你能参透的。" },
+                threatBig = new[] { "这步棋…有些出乎意料。", "容本猫重新审视此局。" },
+                threat = new[] { "哦？阁下倒是有些棋力。", "这步棋，本猫认可。" },
+                aiWin = new[] { "承让。本猫的胜利，毫无悬念。", "胜负已分，不必执着。" },
+                playerWin = new[] { "…这盘棋，本猫记下了。", "阁下的棋艺，确实不凡。" },
+                draw = new[] { "平局…倒也是个有趣的结果。", "此局旗鼓相当，改日再战。" },
+            };
+
+            // ====== 玄猫：威严长老，雷厉风行 ======
+            catDialogue["玄猫"] = new CatLines
+            {
+                opening = new[] { "年轻人，老朽奉陪。", "棋盘之上，无长幼之分。" },
+                openingStreak3 = new[] { "三连胜？不过是热身罢了。", "老朽的棋，你还嫩了点。" },
+                openingStreak5 = new[] { "五连胜？老朽纵横棋坛数十年。", "年轻人，老朽不介意让你见识见识。" },
+                thinking = new[] { "且慢…此局有变。", "老朽的棋路，岂是你能揣测的。", "嗯…这步棋，有意思。" },
+                aiStrong = new[] { "此招雷霆万钧！", "老朽的棋，如暴风骤雨！" },
+                aiGood = new[] { "还行，老朽尚未全力。", "这不过是老朽的三成实力。" },
+                threatBig = new[] { "唔…这棋走得不错。", "年轻人，你的棋让老朽刮目相看。" },
+                threat = new[] { "哦？有些本事。", "老朽小看你了。" },
+                aiWin = new[] { "承让。棋道无涯，继续修炼吧。", "老朽的棋，你还差得远呢。" },
+                playerWin = new[] { "…好棋。老朽心服口服。", "年轻人，你让老朽想起了当年。" },
+                draw = new[] { "平局？倒是难得。", "此局旗鼓相当，改日再较高下。" },
+            };
+
+            // ====== 仙喵长老：仙风道骨，亦庄亦谐 ======
+            catDialogue["仙喵长老"] = new CatLines
+            {
+                opening = new[] { "喵～施主，贫猫有礼了。", "棋盘如天地，落子如布阵。" },
+                openingStreak3 = new[] { "三连胜？缘起缘灭，皆是定数。", "贫猫的尾巴，确实有点翘了。" },
+                openingStreak5 = new[] { "五连胜？唉，无敌是多么寂寞。", "施主，你可知道什么是真正的棋道？" },
+                thinking = new[] { "天道无常，棋道亦然…", "喵～让贫猫参悟一番…", "这步棋，暗合天机…", "唔…贫猫的胡子都竖起来了。" },
+                aiStrong = new[] { "此乃天外飞仙之招！", "贫猫的棋，妙法自然。" },
+                aiGood = new[] { "善哉善哉，贫猫随手一拈。", "这步棋，猫爪拈花。" },
+                threatBig = new[] { "施主…你这步棋，有点东西。", "唔…贫猫的毛都炸了…" },
+                threat = new[] { "哦？施主棋艺精进了不少。", "有趣有趣，这棋走得妙。" },
+                aiWin = new[] { "承让承让，贫猫要去晒太阳了。", "喵～胜负乃兵家常事。" },
+                playerWin = new[] { "施主好棋！贫猫心悦诚服。", "喵～今日棋兴已尽，改日再战。" },
+                draw = new[] { "平局？此乃天意，妙不可言。", "施主，你与贫猫棋力相当呢。" },
+            };
+        }
+
+        // ========== 运行时状态 ==========
+
         private Dictionary<string, Dictionary<Mood, Sprite[]>> catFrames = new Dictionary<string, Dictionary<Mood, Sprite[]>>();
         private string currentCatName;
+        private CatLines currentLines;
         private Mood currentMood = Mood.Idle;
         private Mood pendingMood;
         private bool hasPending;
@@ -56,6 +174,8 @@ namespace Wuziqi.UI
 
         private void Start()
         {
+            InitDialogue();
+
             if (gameManager == null) gameManager = GameManager.Instance;
             if (gameManager != null)
             {
@@ -71,12 +191,13 @@ namespace Wuziqi.UI
             if (portrait != null)
                 portrait.preserveAspect = true;
 
-            // 加载当前选中猫的帧动画
+            // 加载当前猫的帧动画
             string catName = GetCurrentCatName();
             LoadCatFrames(catName);
+            currentLines = GetLines(catName);
 
             SetMood(Mood.Idle);
-            ShowBubble(PickLine(OpeningLinesForStreak(WinStreak.Get())), 3f, true);
+            ShowBubble(PickLine(currentLines.opening), 3f, true);
 
             if (CatManager.Instance != null)
                 CatManager.Instance.OnCatChanged += OnCatChanged;
@@ -95,15 +216,24 @@ namespace Wuziqi.UI
                 CatManager.Instance.OnCatChanged -= OnCatChanged;
         }
 
+        // ========== 台词获取 ==========
+
+        private CatLines GetLines(string catName)
+        {
+            if (catDialogue != null && catDialogue.TryGetValue(catName, out var lines))
+                return lines;
+            // 回退到小白
+            if (catDialogue != null && catDialogue.TryGetValue("小白", out var fallback))
+                return fallback;
+            return default;
+        }
+
         // ========== 二维帧数据加载 ==========
 
-        /// <summary>
-        /// 加载指定猫的所有表情帧。路径：Resources/CatFrames/{catName}/{mood}
-        /// </summary>
         private void LoadCatFrames(string catName)
         {
             if (string.IsNullOrEmpty(catName)) return;
-            if (catFrames.ContainsKey(catName)) return; // 已加载过
+            if (catFrames.ContainsKey(catName)) return;
 
             var moodMap = new Dictionary<Mood, Sprite[]>();
             foreach (Mood mood in System.Enum.GetValues(typeof(Mood)))
@@ -121,9 +251,6 @@ namespace Wuziqi.UI
             currentCatName = catName;
         }
 
-        /// <summary>
-        /// 获取指定猫的指定表情帧数组
-        /// </summary>
         private Sprite[] GetCatMoodFrames(string catName, Mood mood)
         {
             if (catFrames.TryGetValue(catName, out var moodMap))
@@ -138,7 +265,7 @@ namespace Wuziqi.UI
         {
             if (CatManager.Instance != null && CatManager.Instance.Selected != null)
                 return CatManager.Instance.Selected.catName;
-            return "小白"; // 默认
+            return "小白";
         }
 
         // ========== 猫切换 ==========
@@ -150,11 +277,11 @@ namespace Wuziqi.UI
 
             string newCatName = cat.catName;
 
-            // 确保新猫的帧已加载
             if (!catFrames.ContainsKey(newCatName))
                 LoadCatFrames(newCatName);
 
             currentCatName = newCatName;
+            currentLines = GetLines(newCatName);
 
             // 切猫后直接播放新猫的待机动画
             SetMood(Mood.Idle);
@@ -169,7 +296,6 @@ namespace Wuziqi.UI
             if (animRoutine != null)
                 StopCoroutine(animRoutine);
 
-            // 从二维数据中取当前猫的对应表情帧
             var frames = GetCatMoodFrames(currentCatName, mood);
             if (frames != null && frames.Length > 0)
             {
@@ -177,7 +303,6 @@ namespace Wuziqi.UI
             }
             else if (portrait != null && fallbackPortrait != null)
             {
-                // 没有帧动画，显示立绘
                 var cat = CatManager.Instance != null ? CatManager.Instance.Selected : null;
                 if (cat != null && cat.portrait != null)
                     portrait.sprite = cat.portrait;
@@ -222,12 +347,12 @@ namespace Wuziqi.UI
                 if (threat >= GomokuAI.FourScore)
                 {
                     TrySetMood(Mood.Worried);
-                    ShowBubble(PickLine(playerThreatBigLines), 3f);
+                    ShowBubble(PickLine(currentLines.threatBig), 3f);
                 }
                 else if (threat >= GomokuAI.OpenThreeScore)
                 {
                     TrySetMood(Mood.Thinking);
-                    ShowBubble(PickLine(playerThreatLines), 3f);
+                    ShowBubble(PickLine(currentLines.threat), 3f);
                 }
             }
             else
@@ -236,12 +361,12 @@ namespace Wuziqi.UI
                 if (threat >= GomokuAI.FourScore)
                 {
                     TrySetMood(Mood.Smug);
-                    ShowBubble(PickLine(aiStrongLines), 3f);
+                    ShowBubble(PickLine(currentLines.aiStrong), 3f);
                 }
                 else
                 {
                     TrySetMood(Mood.Thinking);
-                    ShowBubble(PickLine(aiGoodLines), 3f);
+                    ShowBubble(PickLine(currentLines.aiGood), 3f);
                 }
             }
         }
@@ -253,14 +378,14 @@ namespace Wuziqi.UI
             else
             {
                 TrySetMood(Mood.Thinking);
-                ShowBubble(PickLine(thinkingLines), 3f, true);
+                ShowBubble(PickLine(currentLines.thinking), 3f, true);
             }
         }
 
         private void OnBoardReset()
         {
             SetMood(Mood.Idle);
-            ShowBubble(PickLine(OpeningLinesForStreak(WinStreak.Get())), 3f, true);
+            ShowBubble(PickLine(currentLines.opening), 3f, true);
         }
 
         private void OnGameEnded(GameResult result, IReadOnlyList<Vector2Int> line)
@@ -273,19 +398,19 @@ namespace Wuziqi.UI
             if (playerWon)
             {
                 SetMood(Mood.Defeat);
-                ShowBubble(PickLine(playerWinLines), 3.5f, true);
+                ShowBubble(PickLine(currentLines.playerWin), 3.5f, true);
                 WinStreak.Add();
             }
             else if (aiWon)
             {
                 SetMood(Mood.Celebrate);
-                ShowBubble(PickLine(aiWinLines), 3.5f, true);
+                ShowBubble(PickLine(currentLines.aiWin), 3.5f, true);
                 WinStreak.Reset();
             }
             else
             {
                 SetMood(Mood.Worried);
-                ShowBubble(PickLine(drawLines), 3f, true);
+                ShowBubble(PickLine(currentLines.draw), 3f, true);
             }
             UpdateStreakText();
         }
@@ -325,13 +450,6 @@ namespace Wuziqi.UI
         {
             if (lines == null || lines.Length == 0) return null;
             return lines[Random.Range(0, lines.Length)];
-        }
-
-        private string[] OpeningLinesForStreak(int streak)
-        {
-            if (streak >= 5) return openingLinesStreak5;
-            if (streak >= 3) return openingLinesStreak3;
-            return openingLines;
         }
 
         private void UpdateStreakText()
