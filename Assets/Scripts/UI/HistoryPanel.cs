@@ -41,12 +41,14 @@ namespace Wuziqi.UI
         {
             panel.SetActive(true);
             RefreshList();
+            GameManager.Instance?.PauseGame();
         }
 
         public void Hide()
         {
             panel.SetActive(false);
             if (detailPanel != null) detailPanel.SetActive(false);
+            GameManager.Instance?.ResumeGame();
         }
 
         public void RefreshList()

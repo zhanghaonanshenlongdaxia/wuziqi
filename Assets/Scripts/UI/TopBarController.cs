@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Wuziqi.Game;
 
 namespace Wuziqi.UI
 {
@@ -23,13 +24,14 @@ namespace Wuziqi.UI
         [Header("弹窗引用")]
         [SerializeField] private GameObject settingsPanel;
         [SerializeField] private GameObject catSelectPanel;
-        [SerializeField] private GameObject exitConfirmPanel;
+        [SerializeField] private ConfirmDialog confirmDialogPrefab;
         [SerializeField] private GameObject rewardPanel;
         [SerializeField] private GameObject songListPanel;
         [SerializeField] private EnergyInsufficientPanel energyInsufficientPanel;
         [SerializeField] private GameObject dimMask;  // 全屏半透明遮罩
 
         private Coroutine energyFlashCoroutine;
+        private ConfirmDialog activeConfirmDialog;
 
         private void Start()
         {
@@ -42,7 +44,6 @@ namespace Wuziqi.UI
 
             if (settingsPanel) settingsPanel.SetActive(false);
             if (catSelectPanel) catSelectPanel.SetActive(false);
-            if (exitConfirmPanel) exitConfirmPanel.SetActive(false);
             if (rewardPanel) rewardPanel.SetActive(false);
             if (songListPanel) songListPanel.SetActive(false);
             if (dimMask) dimMask.SetActive(false);
@@ -106,30 +107,52 @@ namespace Wuziqi.UI
         {
             if (dimMask) dimMask.SetActive(true);
             if (settingsPanel) settingsPanel.SetActive(true);
+            GameManager.Instance?.PauseGame();
         }
 
         private void OpenCatSelect()
         {
             if (dimMask) dimMask.SetActive(true);
             if (catSelectPanel) catSelectPanel.SetActive(true);
+            GameManager.Instance?.PauseGame();
         }
 
         private void OpenExitConfirm()
         {
+            if (!confirmDialogPrefab) return;
             if (dimMask) dimMask.SetActive(true);
-            if (exitConfirmPanel) exitConfirmPanel.SetActive(true);
+            GameManager.Instance?.PauseGame();
+
+            activeConfirmDialog = Instantiate(confirmDialogPrefab, transform.root);
+            activeConfirmDialog.Show(
+                "确定退出游戏吗？",
+                onConfirm: () =>
+                {
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+#else
+                    Application.Quit();
+#endif
+                },
+                onCancel: () => CloseAllPanels(),
+                title: "退出游戏",
+                confirmText: "退出",
+                cancelText: "取消"
+            );
         }
 
         private void OpenReward()
         {
             if (dimMask) dimMask.SetActive(true);
             if (rewardPanel) rewardPanel.SetActive(true);
+            GameManager.Instance?.PauseGame();
         }
 
         private void OpenSongList()
         {
             if (dimMask) dimMask.SetActive(true);
             if (songListPanel) songListPanel.SetActive(true);
+            GameManager.Instance?.PauseGame();
         }
 
         /// <summary>关闭所有弹窗（由各弹窗的关闭按钮调用）。</summary>
@@ -137,11 +160,12 @@ namespace Wuziqi.UI
         {
             if (settingsPanel) settingsPanel.SetActive(false);
             if (catSelectPanel) catSelectPanel.SetActive(false);
-            if (exitConfirmPanel) exitConfirmPanel.SetActive(false);
+            if (activeConfirmDialog) { Destroy(activeConfirmDialog.gameObject); activeConfirmDialog = null; }
             if (rewardPanel) rewardPanel.SetActive(false);
             if (songListPanel) songListPanel.SetActive(false);
             if (energyInsufficientPanel != null) energyInsufficientPanel.gameObject.SetActive(false);
             if (dimMask) dimMask.SetActive(false);
+            GameManager.Instance?.ResumeGame();
         }
     }
 }

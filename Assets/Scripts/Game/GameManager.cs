@@ -20,9 +20,10 @@ namespace Wuziqi.Game
         public bool IsPlayerTurn { get; private set; } = true;
         public bool IsAIThinking { get; private set; }
         public bool IsGameOver { get; private set; }
+        public bool IsPaused { get; private set; }
         public GameResult Result { get; private set; } = GameResult.InProgress;
 
-        public bool CanPlayerPlaceNow => !IsGameOver && IsPlayerTurn && !IsAIThinking;
+        public bool CanPlayerPlaceNow => !IsGameOver && !IsPaused && IsPlayerTurn && !IsAIThinking;
         public bool CanUndo => Board.MoveCount > 0 && !IsAIThinking;
 
         public event Action<Vector2Int, StoneColor> StonePlaced;
@@ -30,6 +31,7 @@ namespace Wuziqi.Game
         public event Action<GameResult, IReadOnlyList<Vector2Int>> GameEnded;
         public event Action<bool> PlayerTurnChanged;
         public event Action BoardReset;
+        public event Action<bool> GamePaused; // true=暂停, false=恢复
 
         private readonly System.Random rng = new System.Random();
         private Coroutine aiRoutine;
@@ -76,7 +78,13 @@ namespace Wuziqi.Game
         private IEnumerator AITurnRoutine()
         {
             IsAIThinking = true;
-            yield return new WaitForSeconds(UnityEngine.Random.Range(aiThinkTimeMin, aiThinkTimeMax));
+            float waitTime = UnityEngine.Random.Range(aiThinkTimeMin, aiThinkTimeMax);
+            float elapsed = 0f;
+            while (elapsed < waitTime)
+            {
+                if (!IsPaused) elapsed += UnityEngine.Time.deltaTime;
+                yield return null;
+            }
 
             StoneColor aiColor = GomokuAIAdvanced.Other(playerColor);
             CatProfile cat = CatManager.Instance?.Selected;
@@ -139,6 +147,20 @@ namespace Wuziqi.Game
             IsPlayerTurn = Board.CurrentTurnColor == playerColor;
             if (IsPlayerTurn) PlayerTurnChanged?.Invoke(true);
             else BeginAITurn();
+        }
+
+        public void PauseGame()
+        {
+            if (IsPaused || IsGameOver) return;
+            IsPaused = true;
+            GamePaused?.Invoke(true);
+        }
+
+        public void ResumeGame()
+        {
+            if (!IsPaused) return;
+            IsPaused = false;
+            GamePaused?.Invoke(false);
         }
 
         public void Restart()

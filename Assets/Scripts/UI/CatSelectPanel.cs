@@ -20,8 +20,12 @@ namespace Wuziqi.UI
         [SerializeField] private Button unlockAdButton;
         [SerializeField] private Button unlockCoinsButton;
 
+        [Header("切换确认弹窗")]
+        [SerializeField] private ConfirmDialog confirmDialogPrefab;
+
         private int previewIndex;
         private CatProfile[] cats;
+        private ConfirmDialog activeConfirmDialog;
 
         private void Start()
         {
@@ -101,8 +105,34 @@ namespace Wuziqi.UI
 
         private void Confirm()
         {
+            if (confirmDialogPrefab)
+            {
+                activeConfirmDialog = Instantiate(confirmDialogPrefab, transform.root);
+                var gm = GameManager.Instance;
+                bool inGame = gm != null && !gm.IsGameOver && gm.Board.MoveCount > 0;
+                activeConfirmDialog.Show(
+                    inGame ? "切换猫猫需要重新开始，确认吗？" : "确认出战这只猫猫？",
+                    onConfirm: () => DoSwitchCat(),
+                    onCancel: () => { Destroy(activeConfirmDialog.gameObject); activeConfirmDialog = null; },
+                    title: "切换猫猫",
+                    confirmText: "确认",
+                    cancelText: "取消"
+                );
+            }
+            else
+            {
+                DoSwitchCat();
+            }
+        }
+
+        private void DoSwitchCat()
+        {
+            if (activeConfirmDialog) { Destroy(activeConfirmDialog.gameObject); activeConfirmDialog = null; }
             if (CatManager.Instance != null)
                 CatManager.Instance.SelectCat(previewIndex);
+            var gm = GameManager.Instance;
+            if (gm != null && !gm.IsGameOver && gm.Board.MoveCount > 0)
+                gm.TryRestart();
             Close();
         }
 
