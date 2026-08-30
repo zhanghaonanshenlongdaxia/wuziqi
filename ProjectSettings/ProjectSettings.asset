@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!129 &1
 PlayerSettings:
@@ -266,7 +266,7 @@ PlayerSettings:
   AndroidTargetArchitectures: 3
   AndroidTargetDevices: 0
   AndroidSplashScreenScale: 0
-  androidSplashScreen: {fileID: 34114, guid: 76b5bb768294e0742bc8dd04b2e522a5, type: 2}
+  androidSplashScreen: {fileID: 217282, guid: 76b5bb768294e0742bc8dd04b2e522a5, type: 2}
   AndroidKeystoreName: 
   AndroidKeyaliasName: 
   AndroidEnableArmv9SecurityFeatures: 0
@@ -292,7 +292,7 @@ PlayerSettings:
   - m_BuildTarget: Android
     m_Icons:
     - m_Textures:
-      - {fileID: 34118, guid: 9ebdaaef8b8f5b742b0293e9674fc485, type: 2}
+        - {fileID: 217283, guid: 9ebdaaef8b8f5b742b0293e9674fc485, type: 2}
       m_Width: 432
       m_Height: 432
       m_Kind: 2
@@ -669,8 +669,8 @@ PlayerSettings:
   ps4IncludedModules: []
   ps4attribVROutputEnabled: 0
   monoEnv: 
-  splashScreenBackgroundSourceLandscape: {fileID: 34114, guid: 76b5bb768294e0742bc8dd04b2e522a5, type: 2}
-  splashScreenBackgroundSourcePortrait: {fileID: 34114, guid: 76b5bb768294e0742bc8dd04b2e522a5, type: 2}
+  splashScreenBackgroundSourceLandscape: {fileID: 217282, guid: 76b5bb768294e0742bc8dd04b2e522a5, type: 2}
+  splashScreenBackgroundSourcePortrait: {fileID: 217282, guid: 76b5bb768294e0742bc8dd04b2e522a5, type: 2}
   blurSplashScreenBackground: 1
   spritePackerPolicy: 
   webGLMemorySize: 32
@@ -815,3 +815,7 @@ PlayerSettings:
   platformRequiresReadableAssets: 0
   virtualTexturingSupportEnabled: 0
   insecureHttpOption: 0
+
+
+
+
