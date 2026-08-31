@@ -25,23 +25,10 @@
         <repository>https://maven.google.com</repository>
       </repositories>
     </androidPackage>
-    
-    <androidPackage spec="androidx.annotation:annotation:1.5.0">
+
+    <androidPackage spec="androidx.fragment:fragment:1.5.5">
       <repositories>
         <repository>https://maven.google.com</repository>
-      </repositories>
-    </androidPackage>
-    
-    <androidPackage spec="androidx.appcompat:appcompat:1.5.1">
-      <repositories>
-        <repository>https://maven.google.com</repository>
-      </repositories>
-    </androidPackage>
-    
-    <!-- Third-party Libraries -->
-    <androidPackage spec="com.github.bumptech.glide:glide:4.9.0">
-      <repositories>
-        <repository>https://repo.maven.apache.org/maven2</repository>
       </repositories>
     </androidPackage>
     
@@ -65,4 +52,3 @@
   </iosPods>
   
 </dependencies>
-

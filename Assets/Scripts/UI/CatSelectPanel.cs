@@ -94,7 +94,12 @@ namespace Wuziqi.UI
             {
                 confirmButton.interactable = unlocked && !isCurrent;
                 var label = confirmButton.GetComponentInChildren<TMPro.TMP_Text>();
-                if (label != null) label.text = isCurrent ? "出战中" : "出 战";
+                if (label != null)
+                {
+                    if (isCurrent) label.text = "出战中";
+                    else if (!unlocked) label.text = "出 战";
+                    else label.text = c.challengeCost > 0 ? $"挑战（{c.challengeCost} 币）" : "出 战";
+                }
             }
         }
 
@@ -155,8 +160,13 @@ namespace Wuziqi.UI
                     if (success && CatManager.Instance != null)
                     {
                         CatManager.Instance.UnlockByAd(previewIndex);
+                        if (unlockHintText) unlockHintText.text = "解锁成功！";
                         BuildGrid();
                         Preview(previewIndex);
+                    }
+                    else if (!success)
+                    {
+                        if (unlockHintText) unlockHintText.text = "观看完整广告才能解锁";
                     }
                 });
         }

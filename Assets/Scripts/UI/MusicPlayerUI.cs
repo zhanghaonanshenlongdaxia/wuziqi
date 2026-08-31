@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace Wuziqi.UI
 {
-    /// <summary>国风音乐播放器：曲名显示、顺序/随机/单曲模式、暂停、下一首、声浪可视化。</summary>
+    /// <summary>国风音乐播放器：曲名显示、顺序/随机/单曲模式、暂停、下一首、声浪可视化、未解锁歌曲30秒试听。</summary>
     public class MusicPlayerUI : MonoBehaviour
     {
         public enum PlayMode { Sequential, Shuffle, Single }
@@ -50,6 +50,11 @@ namespace Wuziqi.UI
         private readonly float[] samples = new float[64];
         private readonly Color inkColor = new Color32(59, 56, 51, 255);
 
+        // 试听计时
+        private const float PreviewSeconds = 30f;
+        private float previewTimer;
+        private bool isPreview;
+
         private void Start()
         {
             if (source == null)
@@ -78,6 +83,18 @@ namespace Wuziqi.UI
 
         private void Update()
         {
+            // 试听计时：未解锁歌曲播放30秒后自动切下一首
+            if (isPreview && source.isPlaying)
+            {
+                previewTimer -= Time.deltaTime;
+                if (previewTimer <= 0f)
+                {
+                    isPreview = false;
+                    PlayNext();
+                    return;
+                }
+            }
+
             if (source.isPlaying && source.clip != null && source.time >= source.clip.length - 0.05f)
                 OnTrackFinished();
             AnimateWave();
@@ -93,7 +110,14 @@ namespace Wuziqi.UI
             if (t == null || t.clip == null) return;
             source.clip = t.clip;
             source.Play();
-            if (titleText != null) titleText.text = $"♪ {t.title}";
+
+            // 检查是否解锁
+            bool unlocked = SongListPanel.IsSongUnlocked(index);
+            isPreview = !unlocked;
+            previewTimer = PreviewSeconds;
+
+            string displayName = unlocked ? $"♪ {t.title}" : $"♪ {t.title}（试听）";
+            if (titleText != null) titleText.text = displayName;
             UpdatePlayPauseIcon();
         }
 
@@ -116,6 +140,7 @@ namespace Wuziqi.UI
         public void PlayNext()
         {
             PlayClick();
+            isPreview = false;
             if (tracks == null || tracks.Length == 0) return;
             if (mode == PlayMode.Shuffle && tracks.Length > 1)
             {
@@ -142,6 +167,7 @@ namespace Wuziqi.UI
 
         private void OnTrackFinished()
         {
+            isPreview = false;
             switch (mode)
             {
                 case PlayMode.Single:
@@ -211,7 +237,6 @@ namespace Wuziqi.UI
                 float sum = 0f;
                 for (int j = 0; j < chunk; j++) sum += samples[i * chunk + j];
                 float avg = sum / chunk;
-                // 感知加权：低频段能量大，指数放大，高度 3~26
                 float target = Mathf.Clamp(Mathf.Sqrt(avg) * 340f, 3f, 26f);
                 float smooth = Mathf.Lerp(GetBarHeight(i), target, Time.deltaTime * 14f);
                 SetBarHeight(i, smooth);
@@ -220,7 +245,6 @@ namespace Wuziqi.UI
 
         private float GetBarHeight(int i)
         {
-            // half-height (offsetMax.y = +h, offsetMin.y = -h)
             return bars[i].rectTransform.offsetMax.y;
         }
 

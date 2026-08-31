@@ -4,349 +4,323 @@ using UnityEngine;
 
 namespace Wuziqi.Core
 {
-    /// <summary>
-    /// ¸ß¼¶Îå×ÓÆåAI£ºAlpha-BetaËÑË÷ + ¾«Ï¸ÆÀ¹Àº¯Êı
-    /// Ö§³Ö3²ãËÑË÷£¬Ê¶±ğ¶àÖÖÆåĞÍ£¬¾ßÓĞ½ÏÇ¿µÄ¹¥·ÀÄÜÁ¦
-    /// </summary>
+    /// <summary>äº”å­æ£‹ AIï¼šå¯å‘å¼è¯„åˆ† + N å±‚å‰ç»ï¼Œéš¾åº¦ç”±æœç´¢æ·±åº¦æ§åˆ¶ã€‚</summary>
     public static class GomokuAIAdvanced
     {
-        private static float currentScoreMultiplier = 1.0f;
-        // ÆåĞÍÆÀ·Ö³£Á¿
-        private const long WIN_SCORE = 10000000;
-        private const long OPEN_FOUR_SCORE = 1000000;
-        private const long FOUR_SCORE = 100000;
-        private const long OPEN_THREE_SCORE = 50000;
-        private const long THREE_SCORE = 5000;
-        private const long OPEN_TWO_SCORE = 1000;
-        private const long TWO_SCORE = 100;
-        
-        // ËÑË÷Éî¶È
-        private static int searchDepth = 3;
-        // ºòÑ¡µãÊıÁ¿ÏŞÖÆ£¨Ã¿²ãËÑË÷£©
-        private const int MAX_CANDIDATES = 15;
-        
-        // ·½ÏòÏòÁ¿
-        private static readonly int[][] DIRECTIONS = new int[][] {
-            new int[] {1, 0},   // Ë®Æ½
-            new int[] {0, 1},   // ´¹Ö±
-            new int[] {1, 1},   // ÓÒÏÂ¶Ô½ÇÏß
-            new int[] {1, -1}   // ÓÒÉÏ¶Ô½ÇÏß
+        // æ£‹å‹åˆ†å€¼
+        private const long WIN_SCORE       = 10_000_000;
+        private const long OPEN_FOUR_SCORE =   1_000_000;
+        private const long FOUR_SCORE      =     100_000;
+        private const long OPEN_THREE_SCORE =     50_000;
+        private const long THREE_SCORE     =      8_000;
+        private const long OPEN_TWO_SCORE  =      2_000;
+        private const long TWO_SCORE       =        200;
+
+        private const float DEFENSE_WEIGHT = 0.9f;
+        private const int NEIGHBOR_RADIUS = 2;
+
+        // æ–¹å‘
+        private static readonly int[][] DIRS = new int[][] {
+            new int[] {1, 0}, new int[] {0, 1},
+            new int[] {1, 1}, new int[] {1, -1}
         };
-        
-        /// <summary>
-        /// ²éÕÒ×î¼ÑÂä×ÓÎ»ÖÃ
-        /// </summary>
-        public static Vector2Int FindBestMove(GomokuBoard board, StoneColor aiColor, int searchDepthParam = 3, float scoreMultiplierParam = 1.0f, System.Random rng = null)
+
+        // ============================================================
+        //  å…¬å¼€å…¥å£
+        // ============================================================
+
+        /// <param name="searchDepth">1=çº¯è¯„åˆ†, 2+=å‰ç»å±‚æ•°ï¼ˆè¶Šå¤§è¶Šå¼ºï¼‰</param>
+        /// <param name="scoreMultiplier">è¯„åˆ†ç³»æ•°ï¼Œè¶Šå¤§è¶Šå‡¶</param>
+        public static Vector2Int FindBestMove(
+            GomokuBoard board, StoneColor aiColor,
+            int searchDepth = 1, float scoreMultiplier = 1.0f,
+            System.Random rng = null)
         {
             rng ??= new System.Random();
-            StoneColor oppColor = Other(aiColor);
-            searchDepth = searchDepthParam;
-            currentScoreMultiplier = scoreMultiplierParam;
-            
-            // ¿ÕÆåÅÌÏÂÖĞĞÄµã
+
+            // ç©ºç›˜ä¸‹å¤©å…ƒ
             if (board.MoveCount == 0)
                 return new Vector2Int(GomokuBoard.Size / 2, GomokuBoard.Size / 2);
-            
-            // 1. ¼ì²éÊÇ·ñÓĞÁ¢¼´»ñÊ¤µÄÂä×Ó
-            Vector2Int immediateWin = FindWinningMove(board, aiColor);
-            if (immediateWin.x >= 0) return immediateWin;
-            
-            // 2. ¼ì²éÊÇ·ñĞèÒª×èÖ¹¶ÔÊÖÁ¢¼´»ñÊ¤
-            Vector2Int immediateBlock = FindWinningMove(board, oppColor);
-            if (immediateBlock.x >= 0) return immediateBlock;
-            
-            // 3. Alpha-BetaËÑË÷
-            List<Vector2Int> candidates = GetSortedCandidates(board, aiColor);
-            Vector2Int bestMove = candidates[0];
-            long bestScore = long.MinValue;
-            
-            foreach (Vector2Int move in candidates)
-            {
-                // Ä£ÄâÂä×Ó
-                board.TryPlace(move.x, move.y, aiColor);
-                
-                // µİ¹éËÑË÷
-                long score = -AlphaBeta(board, searchDepth - 1, long.MinValue, long.MaxValue, oppColor, aiColor, rng);
-                
-                // ³·ÏúÂä×Ó
-                board.TryUndoLast(out _);
-                
-                // Ìí¼ÓËæ»úÈÅ¶¯±ÜÃâÍêÈ«ÏàÍ¬
-                score += rng.Next(10);
-                
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestMove = move;
-                }
-            }
-            
-            return bestMove;
+
+            StoneColor oppColor = Other(aiColor);
+
+            // å¿…èƒœæ£€æµ‹
+            Vector2Int win = FindImmediateWin(board, aiColor);
+            if (win.x >= 0) return win;
+
+            Vector2Int block = FindImmediateWin(board, oppColor);
+            if (block.x >= 0) return block;
+
+            // æ”¶é›†å€™é€‰ç‚¹
+            List<Vector2Int> candidates = GetCandidates(board);
+            if (candidates.Count == 0)
+                return new Vector2Int(GomokuBoard.Size / 2, GomokuBoard.Size / 2);
+
+            // depth <= 1ï¼šçº¯å¯å‘å¼è¯„åˆ†ï¼ˆæœ€å¿«ï¼‰
+            if (searchDepth <= 1)
+                return PickBestByScore(board, candidates, aiColor, oppColor, scoreMultiplier, rng);
+
+            // depth >= 2ï¼šå¸¦å‰ç»çš„æœç´¢
+            return SearchWithLookahead(board, candidates, aiColor, oppColor, searchDepth, scoreMultiplier, rng);
         }
-        
-        /// <summary>
-        /// Alpha-BetaËÑË÷Ëã·¨
-        /// </summary>
-        private static long AlphaBeta(GomokuBoard board, int depth, long alpha, long beta, 
-                                      StoneColor currentColor, StoneColor aiColor, System.Random rng)
+
+        // ============================================================
+        //  çº¯å¯å‘å¼è¯„åˆ†ï¼ˆdepth=1ï¼Œå’ŒåŸå§‹ç®—æ³•ä¸€è‡´ï¼‰
+        // ============================================================
+
+        private static Vector2Int PickBestByScore(
+            GomokuBoard board, List<Vector2Int> candidates,
+            StoneColor aiColor, StoneColor oppColor, float mult, System.Random rng)
         {
-            // ÖÕÖ¹Ìõ¼ş£ºËÑË÷µ½µ×»òÓÎÏ·½áÊø
-            if (depth == 0 || board.IsFull)
-            {
-                return EvaluateBoard(board, aiColor);
-            }
-            
-            // ¼ì²éÊÇ·ñÓĞÁ¢¼´»ñÊ¤/Ê§°Ü
-            Vector2Int winMove = FindWinningMove(board, currentColor);
-            if (winMove.x >= 0)
-            {
-                return currentColor == aiColor ? WIN_SCORE : -WIN_SCORE;
-            }
-            
-            StoneColor nextColor = Other(currentColor);
-            List<Vector2Int> candidates = GetSortedCandidates(board, currentColor);
-            
+            Vector2Int best = candidates[0];
             long bestScore = long.MinValue;
-            
-            foreach (Vector2Int move in candidates)
+
+            foreach (Vector2Int p in candidates)
             {
-                // Ä£ÄâÂä×Ó
-                board.TryPlace(move.x, move.y, currentColor);
-                
-                // µİ¹éËÑË÷
-                long score = -AlphaBeta(board, depth - 1, -beta, -alpha, nextColor, aiColor, rng);
-                
-                // ³·ÏúÂä×Ó
-                board.TryUndoLast(out _);
-                
+                long attack  = EvaluatePoint(board, p.x, p.y, aiColor, mult);
+                long defend  = EvaluatePoint(board, p.x, p.y, oppColor, mult);
+                long score   = attack + (long)(defend * DEFENSE_WEIGHT);
+
+                // ä¸­å¿ƒåå¥½
+                int centerDist = Mathf.Abs(p.x - 7) + Mathf.Abs(p.y - 7);
+                score += (14 - centerDist) * 3;
+
+                // éšæœºæ‰°åŠ¨
+                score += rng.Next(20);
+
                 if (score > bestScore)
                 {
                     bestScore = score;
-                }
-                
-                // Alpha-Beta¼ôÖ¦
-                if (score > alpha)
-                {
-                    alpha = score;
-                }
-                if (alpha >= beta)
-                {
-                    break;
+                    best = p;
                 }
             }
-            
+            return best;
+        }
+
+        // ============================================================
+        //  å¸¦å‰ç»æœç´¢ï¼ˆdepth>=2ï¼‰
+        // ============================================================
+
+        private static Vector2Int SearchWithLookahead(
+            GomokuBoard board, List<Vector2Int> candidates,
+            StoneColor aiColor, StoneColor oppColor, int depth, float mult, System.Random rng)
+        {
+            Vector2Int best = candidates[0];
+            long bestScore = long.MinValue;
+
+            // æŒ‰è¯„åˆ†é¢„æ’åºï¼Œå…ˆè¯„ä¼°æœ€æœ‰æ½œåŠ›çš„èµ°æ³•ï¼ˆä¾¿äºå‰ªæï¼‰
+            candidates.Sort((a, b) =>
+            {
+                long sa = EvaluatePoint(board, a.x, a.y, aiColor, mult) + (long)(EvaluatePoint(board, a.x, a.y, oppColor, mult) * DEFENSE_WEIGHT);
+                long sb = EvaluatePoint(board, b.x, b.y, aiColor, mult) + (long)(EvaluatePoint(board, b.x, b.y, oppColor, mult) * DEFENSE_WEIGHT);
+                return sb.CompareTo(sa);
+            });
+
+            // é™åˆ¶å‰ç»çš„å€™é€‰æ•°ï¼ˆé¿å…å¤ªæ…¢ï¼‰
+            int limit = Mathf.Min(candidates.Count, depth <= 2 ? 12 : 8);
+
+            for (int i = 0; i < limit; i++)
+            {
+                Vector2Int p = candidates[i];
+
+                // æ¨¡æ‹Ÿ AI è½å­
+                board.TryPlace(p.x, p.y, aiColor);
+
+                // æ£€æŸ¥æ˜¯å¦ç›´æ¥èµ¢äº†
+                if (board.HasWinningPattern(p.x, p.y))
+                {
+                    board.TryUndoLast(out _);
+                    return p;
+                }
+
+                // é€’å½’è¯„ä¼°å¯¹æ‰‹æœ€ä½³åº”å¯¹
+                long score = -Lookahead(board, depth - 1, long.MinValue + 1, long.MaxValue - 1, oppColor, aiColor, mult);
+
+                // ä¸­å¿ƒåå¥½
+                int centerDist = Mathf.Abs(p.x - 7) + Mathf.Abs(p.y - 7);
+                score += (14 - centerDist) * 3;
+                score += rng.Next(10);
+
+                board.TryUndoLast(out _);
+
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    best = p;
+                }
+            }
+
+            return best;
+        }
+
+        /// <summary>N å±‚å‰ç»ï¼ˆAlpha-Beta å‰ªæï¼‰ã€‚</summary>
+        private static long Lookahead(GomokuBoard board, int depth, long alpha, long beta,
+                                      StoneColor cur, StoneColor aiColor, float mult)
+        {
+            // æ£€æŸ¥ä¸Šä¸€æ‰‹æ˜¯å¦å·²ç»èµ¢äº†
+            if (board.MoveCount > 0)
+            {
+                var last = board.History[board.MoveCount - 1];
+                if (board.HasWinningPattern(last.X, last.Y))
+                    return last.Color == aiColor ? WIN_SCORE : -WIN_SCORE;
+            }
+
+            // å¶å­èŠ‚ç‚¹ï¼šè¿”å›å½“å‰å±€é¢è¯„åˆ†
+            if (depth == 0)
+                return EvaluateBoard(board, cur, aiColor, mult);
+
+            List<Vector2Int> candidates = GetCandidates(board);
+            if (candidates.Count == 0)
+                return EvaluateBoard(board, cur, aiColor, mult);
+
+            // é¢„æ’åº
+            StoneColor opp = Other(cur);
+            candidates.Sort((a, b) =>
+            {
+                long sa = EvaluatePoint(board, a.x, a.y, cur, mult) + (long)(EvaluatePoint(board, a.x, a.y, opp, mult) * DEFENSE_WEIGHT);
+                long sb = EvaluatePoint(board, b.x, b.y, cur, mult) + (long)(EvaluatePoint(board, b.x, b.y, opp, mult) * DEFENSE_WEIGHT);
+                return sb.CompareTo(sa);
+            });
+
+            int limit = Mathf.Min(candidates.Count, depth <= 1 ? 15 : 10);
+            StoneColor next = Other(cur);
+            long bestScore = long.MinValue;
+
+            for (int i = 0; i < limit; i++)
+            {
+                Vector2Int p = candidates[i];
+
+                board.TryPlace(p.x, p.y, cur);
+
+                // ç«‹å³æ£€æµ‹èµ¢æ£‹
+                if (board.HasWinningPattern(p.x, p.y))
+                {
+                    board.TryUndoLast(out _);
+                    return cur == aiColor ? WIN_SCORE : -WIN_SCORE;
+                }
+
+                long score = -Lookahead(board, depth - 1, -beta, -alpha, next, aiColor, mult);
+
+                board.TryUndoLast(out _);
+
+                if (score > bestScore) bestScore = score;
+                if (score > alpha) alpha = score;
+                if (alpha >= beta) break;
+            }
+
             return bestScore;
         }
-        
-        /// <summary>
-        /// ²éÕÒÁ¢¼´»ñÊ¤µÄÂä×ÓÎ»ÖÃ
-        /// </summary>
-        private static Vector2Int FindWinningMove(GomokuBoard board, StoneColor color)
+
+        // ============================================================
+        //  å¶å­èŠ‚ç‚¹è¯„ä¼°
+        // ============================================================
+
+        private static long EvaluateBoard(GomokuBoard board, StoneColor cur, StoneColor aiColor, float mult)
         {
+            StoneColor opp = Other(cur);
+            // ä» cur è§†è§’è¯„ä¼°ï¼šæ­£åˆ†å¯¹ cur æœ‰åˆ©
+            long score = 0;
             for (int x = 0; x < GomokuBoard.Size; x++)
             {
                 for (int y = 0; y < GomokuBoard.Size; y++)
                 {
-                    if (board.IsEmpty(x, y))
-                    {
-                        // ³¢ÊÔÂä×Ó
-                        board.TryPlace(x, y, color);
-                        
-                        // ¼ì²éÊÇ·ñĞÎ³ÉÎåÁ¬
-                        List<Vector2Int> winLine = board.FindWinningLine(x, y);
-                        
-                        // ³·ÏúÂä×Ó
-                        board.TryUndoLast(out _);
-                        
-                        if (winLine != null)
-                        {
-                            return new Vector2Int(x, y);
-                        }
-                    }
+                    if (!board.IsEmpty(x, y)) continue;
+                    score += EvaluatePoint(board, x, y, cur, mult);
+                    score -= (long)(EvaluatePoint(board, x, y, opp, mult) * DEFENSE_WEIGHT);
                 }
             }
-            
-            return new Vector2Int(-1, -1);
+            return cur == aiColor ? score : -score;
         }
-        
-        /// <summary>
-        /// »ñÈ¡ÅÅĞòºóµÄºòÑ¡µãÁĞ±í£¨ÓÅÏÈ¿¼ÂÇÍşĞ²´óµÄÎ»ÖÃ£©
-        /// </summary>
-        private static List<Vector2Int> GetSortedCandidates(GomokuBoard board, StoneColor color)
+
+        // ============================================================
+        //  å•ç‚¹è¯„åˆ†
+        // ============================================================
+
+        private static long EvaluatePoint(GomokuBoard board, int x, int y, StoneColor color, float mult)
         {
-            List<Vector2Int> candidates = new List<Vector2Int>();
-            StoneColor oppColor = Other(color);
-            
-            // ÊÕ¼¯ËùÓĞ¿ÕÎ»£¨ÏŞÖÆÊıÁ¿ÒÔÌá¸ßĞÔÄÜ£©
-            for (int x = 0; x < GomokuBoard.Size; x++)
-            {
-                for (int y = 0; y < GomokuBoard.Size; y++)
-                {
-                    if (board.IsEmpty(x, y))
-                    {
-                        // ¼ÆËã¸ÃÎ»ÖÃµÄÍşĞ²Öµ
-                        long threat = EvaluatePointAdvanced(board, x, y, color) + 
-                                     EvaluatePointAdvanced(board, x, y, oppColor);
-                        
-                        // ÖĞĞÄÆ«ºÃ
-                        int centerDist = Mathf.Abs(x - 7) + Mathf.Abs(y - 7);
-                        threat += (14 - centerDist) * 10;
-                        
-                        candidates.Add(new Vector2Int(x, y));
-                    }
-                }
-            }
-            
-            // °´ÍşĞ²ÖµÅÅĞò£¨ÕâÀï¼ò»¯´¦Àí£¬Êµ¼Ê¿ÉÒÔ¸ü¾«È·£©
-            candidates.Sort((a, b) => 
-            {
-                long scoreA = EvaluatePointAdvanced(board, a.x, a.y, color) + 
-                             EvaluatePointAdvanced(board, a.x, a.y, oppColor);
-                long scoreB = EvaluatePointAdvanced(board, b.x, b.y, color) + 
-                             EvaluatePointAdvanced(board, b.x, b.y, oppColor);
-                return scoreB.CompareTo(scoreA);
-            });
-            
-            // ÏŞÖÆºòÑ¡µãÊıÁ¿
-            if (candidates.Count > MAX_CANDIDATES)
-            {
-                candidates = candidates.GetRange(0, MAX_CANDIDATES);
-            }
-            
-            return candidates;
+            long total = 0;
+            foreach (int[] dir in DIRS)
+                total += (long)(LineScore(board, x, y, color, dir[0], dir[1]) * mult);
+            return total;
         }
-        
-        /// <summary>
-        /// ¸ß¼¶µãÆÀ¹À£º¿¼ÂÇ¸ü¶àÆåĞÍ
-        /// </summary>
-        private static long EvaluatePointAdvanced(GomokuBoard board, int x, int y, StoneColor color)
+
+        private static long LineScore(GomokuBoard board, int x, int y, StoneColor color, int dx, int dy)
         {
-            if (!board.IsInside(x, y) || !board.IsEmpty(x, y))
-                return 0;
-            
-            long totalScore = 0;
-            
-            // ¼ì²éËÄ¸ö·½Ïò
-            foreach (int[] dir in DIRECTIONS)
-            {
-                int dx = dir[0], dy = dir[1];
-                
-                // ÏòÕı·½ÏòÉ¨Ãè
-                int count1 = 0;
-                int empty1 = 0;
-                int nx = x + dx, ny = y + dy;
-                while (board.IsInside(nx, ny) && board.GetCell(nx, ny) == color)
-                {
-                    count1++;
-                    nx += dx;
-                    ny += dy;
-                }
-                if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny))
-                {
-                    empty1++;
-                    // ¼ÌĞøÉ¨Ãè¿ÕÎ»ºóµÄÆå×Ó
-                    int nx2 = nx + dx, ny2 = ny + dy;
-                    while (board.IsInside(nx2, ny2) && board.GetCell(nx2, ny2) == color)
-                    {
-                        count1++;
-                        nx2 += dx;
-                        ny2 += dy;
-                    }
-                }
-                
-                // Ïò¸º·½ÏòÉ¨Ãè
-                int count2 = 0;
-                int empty2 = 0;
-                nx = x - dx;
-                ny = y - dy;
-                while (board.IsInside(nx, ny) && board.GetCell(nx, ny) == color)
-                {
-                    count2++;
-                    nx -= dx;
-                    ny -= dy;
-                }
-                if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny))
-                {
-                    empty2++;
-                    // ¼ÌĞøÉ¨Ãè¿ÕÎ»ºóµÄÆå×Ó
-                    int nx2 = nx - dx, ny2 = ny - dy;
-                    while (board.IsInside(nx2, ny2) && board.GetCell(nx2, ny2) == color)
-                    {
-                        count2++;
-                        nx2 -= dx;
-                        ny2 -= dy;
-                    }
-                }
-                
-                int totalCount = count1 + count2 + 1; // +1 ´ú±íµ±Ç°Âä×Ó
-                int openEnds = empty1 + empty2;
-                
-                totalScore += (long)(ScorePattern(totalCount, openEnds) * currentScoreMultiplier);
-            }
-            
-            return totalScore;
+            int count = 1;
+            int openEnds = 0;
+
+            // æ­£å‘
+            int nx = x + dx, ny = y + dy;
+            while (board.IsInside(nx, ny) && board.GetCell(nx, ny) == color) { count++; nx += dx; ny += dy; }
+            if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny)) openEnds++;
+
+            // åå‘
+            nx = x - dx; ny = y - dy;
+            while (board.IsInside(nx, ny) && board.GetCell(nx, ny) == color) { count++; nx -= dx; ny -= dy; }
+            if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny)) openEnds++;
+
+            return ScoreFor(count, openEnds);
         }
-        
-        /// <summary>
-        /// ¸ù¾İÆåĞÍÄ£Ê½ÆÀ·Ö
-        /// </summary>
-        private static long ScorePattern(int count, int openEnds)
+
+        private static long ScoreFor(int count, int openEnds)
         {
             if (count >= 5) return WIN_SCORE;
             if (openEnds == 0) return 0;
-            
             switch (count)
             {
-                case 4:
-                    return openEnds == 2 ? OPEN_FOUR_SCORE : FOUR_SCORE;
-                case 3:
-                    return openEnds == 2 ? OPEN_THREE_SCORE : THREE_SCORE;
-                case 2:
-                    return openEnds == 2 ? OPEN_TWO_SCORE : TWO_SCORE;
-                case 1:
-                    return openEnds == 2 ? 50 : 10;
-                default:
-                    return openEnds == 2 ? 200 : 50;
+                case 4: return openEnds == 2 ? OPEN_FOUR_SCORE : FOUR_SCORE;
+                case 3: return openEnds == 2 ? OPEN_THREE_SCORE : THREE_SCORE;
+                case 2: return openEnds == 2 ? OPEN_TWO_SCORE  : TWO_SCORE;
+                default: return openEnds == 2 ? 100 : 20;
             }
         }
-        
-        /// <summary>
-        /// ÆÀ¹ÀÕû¸öÆåÅÌ¶ÔAIµÄÓĞÀû³Ì¶È
-        /// </summary>
-        private static long EvaluateBoard(GomokuBoard board, StoneColor aiColor)
+
+        // ============================================================
+        //  å€™é€‰æ”¶é›†ï¼ˆå·²æœ‰æ£‹å­å‘¨å›´ 2 æ ¼ï¼‰
+        // ============================================================
+
+        private static List<Vector2Int> GetCandidates(GomokuBoard board)
         {
-            long score = 0;
-            StoneColor oppColor = Other(aiColor);
-            
-            // ÆÀ¹ÀËùÓĞÎ»ÖÃ
+            List<Vector2Int> list = new List<Vector2Int>();
+            bool[,] mark = new bool[GomokuBoard.Size, GomokuBoard.Size];
+
             for (int x = 0; x < GomokuBoard.Size; x++)
             {
                 for (int y = 0; y < GomokuBoard.Size; y++)
                 {
-                    if (!board.IsEmpty(x, y))
-                    {
-                        StoneColor cellColor = board.GetCell(x, y);
-                        long pointScore = EvaluatePointAdvanced(board, x, y, cellColor);
-                        
-                        if (cellColor == aiColor)
+                    if (board.IsEmpty(x, y)) continue;
+                    for (int dx = -NEIGHBOR_RADIUS; dx <= NEIGHBOR_RADIUS; dx++)
+                        for (int dy = -NEIGHBOR_RADIUS; dy <= NEIGHBOR_RADIUS; dy++)
                         {
-                            score += pointScore;
+                            int nx = x + dx, ny = y + dy;
+                            if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny) && !mark[nx, ny])
+                            {
+                                mark[nx, ny] = true;
+                                list.Add(new Vector2Int(nx, ny));
+                            }
                         }
-                        else
-                        {
-                            score -= pointScore;
-                        }
-                    }
                 }
             }
-            
-            return score;
+            return list;
         }
-        
-        public static StoneColor Other(StoneColor c) => c == StoneColor.Black ? StoneColor.White : StoneColor.Black;
+
+        // ============================================================
+        //  å¿…èƒœæ£€æµ‹
+        // ============================================================
+
+        private static Vector2Int FindImmediateWin(GomokuBoard board, StoneColor color)
+        {
+            foreach (Vector2Int p in GetCandidates(board))
+            {
+                board.TryPlace(p.x, p.y, color);
+                bool win = board.HasWinningPattern(p.x, p.y);
+                board.TryUndoLast(out _);
+                if (win) return p;
+            }
+            return new Vector2Int(-1, -1);
+        }
+
+        public static StoneColor Other(StoneColor c)
+            => c == StoneColor.Black ? StoneColor.White : StoneColor.Black;
     }
 }
-
-
-
-

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using UnityEngine;
 using Wuziqi.Core;
 
@@ -90,17 +91,39 @@ namespace Wuziqi.Game
             CatProfile cat = CatManager.Instance?.Selected;
             int searchDepth = cat?.aiSearchDepth ?? 3;
             float scoreMultiplier = cat?.aiScoreMultiplier ?? 1.0f;
-            Vector2Int move = GomokuAIAdvanced.FindBestMove(Board, aiColor, searchDepth, scoreMultiplier, rng);
+
+            // 拷贝棋盘，在后台线程跑 AI 搜索（避免卡主线程）
+            GomokuBoard boardCopy = Board.Copy();
+            var tcs = new TaskCompletionSource<Vector2Int>();
+            Task.Run(() =>
+            {
+                try
+                {
+                    Vector2Int move = GomokuAIAdvanced.FindBestMove(boardCopy, aiColor, searchDepth, scoreMultiplier, rng);
+                    tcs.SetResult(move);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError("AI search error: " + ex);
+                    tcs.SetResult(new Vector2Int(-1, -1));
+                }
+            });
+
+            // 等待后台线程完成，期间不阻塞帧
+            while (!tcs.Task.IsCompleted)
+                yield return null;
+
+            Vector2Int result = tcs.Task.Result;
             IsAIThinking = false;
             aiRoutine = null;
 
-            if (move.x < 0 || !Board.TryPlace(move.x, move.y, aiColor))
+            if (result.x < 0 || !Board.TryPlace(result.x, result.y, aiColor))
             {
-                EndGame(GameResult.Draw, null); // 无处可下
+                EndGame(GameResult.Draw, null);
                 yield break;
             }
-            StonePlaced?.Invoke(move, aiColor);
-            GameRecordManager.Instance?.RecordMove(move.x, move.y, aiColor);
+            StonePlaced?.Invoke(result, aiColor);
+            GameRecordManager.Instance?.RecordMove(result.x, result.y, aiColor);
             if (FinishIfOver()) yield break;
 
             IsPlayerTurn = true;
@@ -124,6 +147,17 @@ namespace Wuziqi.Game
             IsAIThinking = false;
             Result = result;
             GameRecordManager.Instance?.FinishRecording(result);
+
+            // 玩家赢了，奖励金币
+            bool playerWon = (result == GameResult.BlackWin && playerColor == StoneColor.Black)
+                          || (result == GameResult.WhiteWin && playerColor == StoneColor.White);
+            if (playerWon)
+            {
+                var cat = CatManager.Instance?.Selected;
+                if (cat != null && EconomyManager.Instance != null)
+                    EconomyManager.Instance.AddCoins(cat.winReward);
+            }
+
             GameEnded?.Invoke(result, winLine);
         }
 
@@ -175,11 +209,20 @@ namespace Wuziqi.Game
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }
 
-        /// <summary>尝试重开一局，先扣体力。体力不足返回false�?/summary>
+        /// <summary>尝试重开一局，先扣体力和挑战费用。不足返回false。</summary>
         public bool TryRestart()
         {
             if (EconomyManager.Instance != null && !EconomyManager.Instance.TryStartGame())
                 return false;
+
+            // 扣挑战费用
+            var cat = CatManager.Instance?.Selected;
+            if (cat != null && cat.challengeCost > 0 && EconomyManager.Instance != null)
+            {
+                if (!EconomyManager.Instance.SpendCoins(cat.challengeCost))
+                    return false; // 仙喵币不足
+            }
+
             Restart();
             return true;
         }

@@ -18,6 +18,7 @@ namespace Wuziqi.Game
 
         [Header("奖励")]
         public int winReward = 10;
+        [Range(0, 50)] public int challengeCost = 2;
 
         [Header("解锁")]
         public UnlockType unlockType = UnlockType.Free;

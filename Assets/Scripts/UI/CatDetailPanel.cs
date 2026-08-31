@@ -21,7 +21,6 @@ namespace Wuziqi.UI
         private void Awake()
         {
             if (closeButton) closeButton.onClick.AddListener(Close);
-            gameObject.SetActive(false);
         }
 
         /// <summary>打开详情面板，显示指定猫猫的信息。</summary>
@@ -37,8 +36,13 @@ namespace Wuziqi.UI
             if (difficultyStars)
                 difficultyStars.text = $"难度 {new string('★', cat.difficulty)}{new string('☆', 5 - cat.difficulty)}";
 
-            // 奖励
-            if (rewardText) rewardText.text = $"胜利奖励 +{cat.winReward} 仙喵币";
+            // 奖励和挑战费用
+            if (rewardText)
+            {
+                string reward = $"胜利 +{cat.winReward} 币";
+                string cost = cat.challengeCost > 0 ? $"  |  挑战 -{cat.challengeCost} 币" : "";
+                rewardText.text = reward + cost;
+            }
 
             // AI 信息
             if (aiInfoText)

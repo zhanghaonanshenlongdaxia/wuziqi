@@ -199,9 +199,6 @@ namespace Dirichlet.Mediation.Editor
             depsBlock.AppendLine("    implementation 'androidx.core:core:1.9.0'");
             depsBlock.AppendLine("    implementation 'androidx.fragment:fragment:1.5.5'");
             depsBlock.AppendLine("    implementation 'androidx.recyclerview:recyclerview:1.2.1'");
-            depsBlock.AppendLine("    implementation 'com.github.bumptech.glide:glide:4.9.0'");
-            depsBlock.AppendLine("    implementation 'androidx.annotation:annotation:1.5.0'");
-            depsBlock.AppendLine("    implementation 'androidx.appcompat:appcompat:1.5.1'");
             depsBlock.AppendLine("    implementation 'com.squareup.okhttp3:okhttp:3.12.1'");
             
             depsBlock.AppendLine($"    {DIRICHLET_DEPS_END}");

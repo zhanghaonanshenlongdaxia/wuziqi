@@ -74,6 +74,15 @@ namespace Wuziqi.Core
             history.Clear();
         }
 
+        /// <summary>深拷贝棋盘（线程安全：AI 后台搜索用）。</summary>
+        public GomokuBoard Copy()
+        {
+            var copy = new GomokuBoard();
+            Array.Copy(cells, copy.cells, cells.Length);
+            copy.history.AddRange(history);
+            return copy;
+        }
+
         /// <summary>以 (x,y) 为中心找 ≥5 连；返回连线格子，无则 null。</summary>
         public List<Vector2Int> FindWinningLine(int x, int y)
         {
@@ -97,6 +106,31 @@ namespace Wuziqi.Core
                 if (line.Count >= 5) return line;
             }
             return null;
+        }
+
+        /// <summary>快速检测 (x,y) 是否形成五连（不分配内存，AI 搜索用）。</summary>
+        public bool HasWinningPattern(int x, int y)
+        {
+            StoneColor color = cells[x, y];
+            if (color == StoneColor.None) return false;
+            foreach (Vector2Int d in Directions)
+            {
+                int count = 1;
+                for (int s = 1; s < 5; s++)
+                {
+                    int nx = x + d.x * s, ny = y + d.y * s;
+                    if (IsInside(nx, ny) && cells[nx, ny] == color) count++;
+                    else break;
+                }
+                for (int s = 1; s < 5; s++)
+                {
+                    int nx = x - d.x * s, ny = y - d.y * s;
+                    if (IsInside(nx, ny) && cells[nx, ny] == color) count++;
+                    else break;
+                }
+                if (count >= 5) return true;
+            }
+            return false;
         }
     }
 }

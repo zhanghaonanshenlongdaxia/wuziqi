@@ -99,7 +99,7 @@ namespace Wuziqi.UI
                 draw = new[] { "平局？花斑觉得挺刺激的！", "再来一局！花斑还没玩够！" },
             };
 
-            catDialogue["银渐层"] = new CatLines
+            catDialogue["阿银"] = new CatLines
             {
                 opening = new[] { "请赐教。", "愿与阁下切磋一二。" },
                 openingStreak3 = new[] { "连胜三场，尚在预料之中。", "不过是理所当然的结果。" },
@@ -114,7 +114,7 @@ namespace Wuziqi.UI
                 draw = new[] { "平局…倒也是个有趣的结果。", "此局旗鼓相当，改日再战。" },
             };
 
-            catDialogue["玄猫"] = new CatLines
+            catDialogue["墨隐"] = new CatLines
             {
                 opening = new[] { "年轻人，老朽奉陪。", "棋盘之上，无长幼之分。" },
                 openingStreak3 = new[] { "三连胜？不过是热身罢了。", "老朽的棋，你还嫩了点。" },
@@ -146,6 +146,16 @@ namespace Wuziqi.UI
         }
 
         // ========== 运行时状态 ==========
+
+        // 显示名 → 资源文件夹名（改名后资源文件夹未同步的情况）
+        private static readonly Dictionary<string, string> resNameMap = new Dictionary<string, string>
+        {
+            { "阿银", "银渐层" },
+            { "墨隐", "玄猫" },
+        };
+
+        private static string ToResName(string catName)
+            => resNameMap.TryGetValue(catName, out var r) ? r : catName;
 
         private Animator catAnimator;
         private Dictionary<string, AnimatorOverrideController> overrideControllers;
@@ -181,10 +191,10 @@ namespace Wuziqi.UI
 
             // 加载所有猫的 OverrideController
             overrideControllers = new Dictionary<string, AnimatorOverrideController>();
-            string[] catNames = { "小白", "橘座", "黑炭", "花斑", "银渐层", "玄猫", "仙喵长老" };
+            string[] catNames = { "小白", "橘座", "黑炭", "花斑", "阿银", "墨隐", "仙喵长老" };
             foreach (var catName in catNames)
             {
-                var oc = Resources.Load<AnimatorOverrideController>("Anim/" + catName);
+                var oc = Resources.Load<AnimatorOverrideController>("Anim/" + ToResName(catName));
                 if (oc != null) overrideControllers[catName] = oc;
             }
 
@@ -258,9 +268,10 @@ namespace Wuziqi.UI
 
             // 加载帧数据到 SpriteAnimator
             string[] moodNames = { "idle", "thinking", "smug", "celebrate", "defeat", "worried" };
+            string resName = ToResName(catName);
             for (int i = 0; i < moodNames.Length; i++)
             {
-                string path = "CatFrames/" + catName + "/" + moodNames[i];
+                string path = "CatFrames/" + resName + "/" + moodNames[i];
                 var sprites = Resources.LoadAll<Sprite>(path);
                 if (sprites != null && sprites.Length > 0)
                 {

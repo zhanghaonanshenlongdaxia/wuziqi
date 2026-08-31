@@ -88,8 +88,8 @@ namespace Wuziqi.Game
 
             if (!sdkInitialized || adNative == null)
             {
-                Debug.LogWarning("[AdManager] SDK 未初始化，回退模拟");
-                onComplete?.Invoke(true);
+                Debug.LogWarning("[AdManager] SDK 未初始化");
+                onComplete?.Invoke(false);
                 return;
             }
 
@@ -111,15 +111,18 @@ namespace Wuziqi.Game
             adNative.LoadRewardVideoAd(request,
                 ad =>
                 {
+                    bool rewarded = false;
+
                     // 加载成功，监听事件后展示
                     ad.RewardVerified += args =>
                     {
+                        rewarded = args.IsVerified;
                         Debug.Log($"[AdManager] 激励验证: verified={args.IsVerified}, amount={args.RewardAmount}");
                     };
                     ad.Closed += () =>
                     {
-                        Debug.Log("[AdManager] 激励广告关闭");
-                        onComplete?.Invoke(true);
+                        Debug.Log($"[AdManager] 激励广告关闭, rewarded={rewarded}");
+                        onComplete?.Invoke(rewarded);
                     };
                     ad.Clicked += () => Debug.Log("[AdManager] 激励广告点击");
 
@@ -150,8 +153,8 @@ namespace Wuziqi.Game
 
             if (!sdkInitialized || adNative == null)
             {
-                Debug.LogWarning("[AdManager] SDK 未初始化，回退模拟");
-                onComplete?.Invoke(true);
+                Debug.LogWarning("[AdManager] SDK 未初始化");
+                onComplete?.Invoke(false);
                 return;
             }
 

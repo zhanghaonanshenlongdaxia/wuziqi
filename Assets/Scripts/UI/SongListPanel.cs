@@ -13,6 +13,7 @@ namespace Wuziqi.UI
         [SerializeField] private Button closeButton;
         [SerializeField] private MusicPlayerUI player;
         [SerializeField] private SongItem songItemPrefab;
+        [SerializeField] private TMP_Text messageText;
 
         // 曲目解锁配置（与 MusicPlayerUI tracks 对应）
         // 前3首免费，4-6首10仙喵币，7-9首20仙喵币
@@ -29,6 +30,21 @@ namespace Wuziqi.UI
         private void Start()
         {
             if (closeButton) closeButton.onClick.AddListener(Close);
+            if (messageText) messageText.gameObject.SetActive(false);
+        }
+
+        private void ShowMessage(string msg, float duration = 2f)
+        {
+            if (messageText == null) return;
+            messageText.text = msg;
+            messageText.gameObject.SetActive(true);
+            CancelInvoke(nameof(HideMessage));
+            Invoke(nameof(HideMessage), duration);
+        }
+
+        private void HideMessage()
+        {
+            if (messageText) messageText.gameObject.SetActive(false);
         }
 
         private void OnEnable() => BuildList();
@@ -87,12 +103,13 @@ namespace Wuziqi.UI
             {
                 PlayerPrefs.SetInt(K_Prefix + idx, 1);
                 PlayerPrefs.Save();
+                ShowMessage("解锁成功！");
                 PlaySong(idx);
                 Close();
             }
             else
             {
-                // 余额不足：刷新状态提示
+                ShowMessage("仙喵币不足！");
                 BuildList();
             }
         }

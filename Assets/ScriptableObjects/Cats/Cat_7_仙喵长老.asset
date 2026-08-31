@@ -17,8 +17,9 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: f65b5bc9b4dbbe644bafb5b324f05daf, type: 3}
   difficulty: 5
   aiSearchDepth: 6
-  aiScoreMultiplier: 1.2
+  aiScoreMultiplier: 1.5
   winReward: 100
+  challengeCost: 20
   unlockType: 2
   coinCost: 100
   framesDir: 仙喵长老
