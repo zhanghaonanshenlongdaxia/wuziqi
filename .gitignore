@@ -51,3 +51,8 @@ crashlytics-build.properties
 Packages/com.unity.burst/
 Packages/com.unity.mathematics/
 Packages/com.unity.collections/
+# API Keys - NEVER COMMIT
+*.env
+*apikey*
+*api_key*
+*secret*

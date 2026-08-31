@@ -8,7 +8,7 @@
 
 | 项目 | 值 |
 |------|-----|
-| **API Key** | `ark-5ac4efb5-b854-4ddc-8637-d83e02688b6e-a80b1` |
+| **API Key** | `YOUR_API_KEY_HERE` |
 | **Base URL** | `https://ark.cn-beijing.volces.com/api/plan/v3/images/generations` |
 | **模型** | `doubao-seedream-5.0-lite` |
 
@@ -24,7 +24,7 @@
 ```python
 import json, base64, urllib.request, os
 
-API_KEY = "ark-5ac4efb5-b854-4ddc-8637-d83e02688b6e-a80b1"
+API_KEY = "YOUR_API_KEY_HERE"
 API_URL = "https://ark.cn-beijing.volces.com/api/plan/v3/images/generations"
 
 def generate_image(prompt, save_path, reference_image=None, seed=42):
