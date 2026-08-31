@@ -20,6 +20,10 @@ namespace Wuziqi.UI
         [SerializeField] private Button unlockAdButton;
         [SerializeField] private Button unlockCoinsButton;
 
+        [Header("猫猫详情")]
+        [SerializeField] private Button detailButton;
+        [SerializeField] private CatDetailPanel detailPanel;
+
         [Header("切换确认弹窗")]
         [SerializeField] private ConfirmDialog confirmDialogPrefab;
 
@@ -33,6 +37,7 @@ namespace Wuziqi.UI
             if (confirmButton) confirmButton.onClick.AddListener(Confirm);
             if (unlockAdButton) unlockAdButton.onClick.AddListener(TryUnlockByAd);
             if (unlockCoinsButton) unlockCoinsButton.onClick.AddListener(TryUnlockByCoins);
+            if (detailButton) detailButton.onClick.AddListener(ShowDetail);
         }
 
         private void OnEnable() => BuildGrid();
@@ -101,6 +106,12 @@ namespace Wuziqi.UI
                 CatProfile.UnlockType.Coins => $"{c.coinCost} 仙喵币解锁",
                 _ => "免费",
             };
+        }
+
+        private void ShowDetail()
+        {
+            if (detailPanel != null && cats != null && previewIndex >= 0 && previewIndex < cats.Length)
+                detailPanel.Open(cats[previewIndex], previewIndex);
         }
 
         private void Confirm()
