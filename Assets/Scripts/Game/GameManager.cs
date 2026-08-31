@@ -24,8 +24,9 @@ namespace Wuziqi.Game
         public bool IsPaused { get; private set; }
         public GameResult Result { get; private set; } = GameResult.InProgress;
 
-        public bool CanPlayerPlaceNow => !IsGameOver && !IsPaused && IsPlayerTurn && !IsAIThinking;
-        public bool CanUndo => Board.MoveCount > 0 && !IsAIThinking;
+        public bool IsGameStarted { get; private set; }
+        public bool CanPlayerPlaceNow => IsGameStarted && !IsGameOver && !IsPaused && IsPlayerTurn && !IsAIThinking;
+        public bool CanUndo => IsGameStarted && Board.MoveCount > 0 && !IsAIThinking;
 
         public event Action<Vector2Int, StoneColor> StonePlaced;
         public event Action<Vector2Int> StoneRemoved;
@@ -41,7 +42,16 @@ namespace Wuziqi.Game
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
+            IsGameStarted = false;
             IsPlayerTurn = playerColor == StoneColor.Black;
+        }
+
+        /// <summary>由主菜单调用，正式启动游戏</summary>
+        public void StartGame()
+        {
+            IsGameStarted = true;
+            IsPlayerTurn = playerColor == StoneColor.Black;
+            PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }
 
         private void OnDestroy()
