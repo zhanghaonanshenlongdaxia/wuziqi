@@ -11,7 +11,7 @@ namespace Wuziqi.Core
         private const long WIN_SCORE       = 10_000_000;
         private const long OPEN_FOUR_SCORE =   1_000_000;
         private const long FOUR_SCORE      =     100_000;
-        private const long OPEN_THREE_SCORE =     50_000;
+        private const long OPEN_THREE_SCORE =    200_000;
         private const long THREE_SCORE     =      8_000;
         private const long OPEN_TWO_SCORE  =      2_000;
         private const long TWO_SCORE       =        200;
@@ -30,7 +30,7 @@ namespace Wuziqi.Core
         // ============================================================
 
         /// <param name="searchDepth">1=纯评分, 2+=前瞻层数（越大越强）</param>
-        /// <param name="scoreMultiplier">评分系数，越大越凶</param>
+        /// <param name="scoreMultiplier">攻击性系数，越大越凶（优先攻击而非防守）</param>
         public static Vector2Int FindBestMove(
             GomokuBoard board, StoneColor aiColor,
             int searchDepth = 1, float scoreMultiplier = 1.0f,
@@ -44,12 +44,23 @@ namespace Wuziqi.Core
 
             StoneColor oppColor = Other(aiColor);
 
-            // 必胜检测
+            // 1. 必胜检测（下一步直接五连）
             Vector2Int win = FindImmediateWin(board, aiColor);
             if (win.x >= 0) return win;
 
+            // 2. 必挡检测（对手下一步直接五连）
             Vector2Int block = FindImmediateWin(board, oppColor);
             if (block.x >= 0) return block;
+
+            // 3. 紧急威胁检测（对手有开放三连，两步后必赢，必须堵）
+            {
+                Vector2Int urgent = FindUrgentThreat(board, oppColor, aiColor);
+                if (urgent.x >= 0) return urgent;
+
+                // 自己的紧急进攻机会
+                Vector2Int attack = FindUrgentThreat(board, aiColor, oppColor);
+                if (attack.x >= 0) return attack;
+            }
 
             // 收集候选点
             List<Vector2Int> candidates = GetCandidates(board);
@@ -77,9 +88,11 @@ namespace Wuziqi.Core
 
             foreach (Vector2Int p in candidates)
             {
-                long attack  = EvaluatePoint(board, p.x, p.y, aiColor, mult);
-                long defend  = EvaluatePoint(board, p.x, p.y, oppColor, mult);
-                long score   = attack + (long)(defend * DEFENSE_WEIGHT);
+                long attack  = EvaluatePoint(board, p.x, p.y, aiColor, 1.0f);
+                long defend  = EvaluatePoint(board, p.x, p.y, oppColor, 1.0f);
+                // mult>1时更凶（攻击权重高），<1时更保守（防御权重高）
+                float defWeight = DEFENSE_WEIGHT / mult;
+                long score   = attack + (long)(defend * defWeight);
 
                 // 中心偏好
                 int centerDist = Mathf.Abs(p.x - 7) + Mathf.Abs(p.y - 7);
@@ -109,15 +122,16 @@ namespace Wuziqi.Core
             long bestScore = long.MinValue;
 
             // 按评分预排序，先评估最有潜力的走法（便于剪枝）
+            float defWeight = DEFENSE_WEIGHT / mult;
             candidates.Sort((a, b) =>
             {
-                long sa = EvaluatePoint(board, a.x, a.y, aiColor, mult) + (long)(EvaluatePoint(board, a.x, a.y, oppColor, mult) * DEFENSE_WEIGHT);
-                long sb = EvaluatePoint(board, b.x, b.y, aiColor, mult) + (long)(EvaluatePoint(board, b.x, b.y, oppColor, mult) * DEFENSE_WEIGHT);
+                long sa = EvaluatePoint(board, a.x, a.y, aiColor, 1.0f) + (long)(EvaluatePoint(board, a.x, a.y, oppColor, 1.0f) * defWeight);
+                long sb = EvaluatePoint(board, b.x, b.y, aiColor, 1.0f) + (long)(EvaluatePoint(board, b.x, b.y, oppColor, 1.0f) * defWeight);
                 return sb.CompareTo(sa);
             });
 
-            // 限制前瞻的候选数（避免太慢）
-            int limit = Mathf.Min(candidates.Count, depth <= 2 ? 15 : 12);
+            // 限制前瞻的候选数（难度越高看得越多）
+            int limit = Mathf.Min(candidates.Count, Mathf.Max(15, depth * 5));
 
             for (int i = 0; i < limit; i++)
             {
@@ -175,14 +189,15 @@ namespace Wuziqi.Core
 
             // 预排序
             StoneColor opp = Other(cur);
+            float innerDefWeight = DEFENSE_WEIGHT / mult;
             candidates.Sort((a, b) =>
             {
-                long sa = EvaluatePoint(board, a.x, a.y, cur, mult) + (long)(EvaluatePoint(board, a.x, a.y, opp, mult) * DEFENSE_WEIGHT);
-                long sb = EvaluatePoint(board, b.x, b.y, cur, mult) + (long)(EvaluatePoint(board, b.x, b.y, opp, mult) * DEFENSE_WEIGHT);
+                long sa = EvaluatePoint(board, a.x, a.y, cur, 1.0f) + (long)(EvaluatePoint(board, a.x, a.y, opp, 1.0f) * innerDefWeight);
+                long sb = EvaluatePoint(board, b.x, b.y, cur, 1.0f) + (long)(EvaluatePoint(board, b.x, b.y, opp, 1.0f) * innerDefWeight);
                 return sb.CompareTo(sa);
             });
 
-            int limit = Mathf.Min(candidates.Count, depth <= 1 ? 20 : 15);
+            int limit = Mathf.Min(candidates.Count, Mathf.Max(12, depth * 4));
             StoneColor next = Other(cur);
             long bestScore = long.MinValue;
 
@@ -218,15 +233,17 @@ namespace Wuziqi.Core
         private static long EvaluateBoard(GomokuBoard board, StoneColor cur, StoneColor aiColor, float mult)
         {
             StoneColor opp = Other(cur);
-            // 从 cur 视角评估：正分对 cur 有利
+            // mult影响攻防权重：cur==aiColor时用mult，否则用1/mult
+            float aggression = cur == aiColor ? mult : (1f / Mathf.Max(mult, 0.1f));
+            float defWeight = DEFENSE_WEIGHT / aggression;
             long score = 0;
             for (int x = 0; x < GomokuBoard.Size; x++)
             {
                 for (int y = 0; y < GomokuBoard.Size; y++)
                 {
                     if (!board.IsEmpty(x, y)) continue;
-                    score += EvaluatePoint(board, x, y, cur, mult);
-                    score -= (long)(EvaluatePoint(board, x, y, opp, mult) * DEFENSE_WEIGHT);
+                    score += EvaluatePoint(board, x, y, cur, 1.0f);
+                    score -= (long)(EvaluatePoint(board, x, y, opp, 1.0f) * defWeight);
                 }
             }
             return cur == aiColor ? score : -score;
@@ -316,6 +333,41 @@ namespace Wuziqi.Core
                 bool win = board.HasWinningPattern(p.x, p.y);
                 board.TryUndoLast(out _);
                 if (win) return p;
+            }
+            return new Vector2Int(-1, -1);
+        }
+
+        /// <summary>紧急威胁：对手有开放三连（两步后必赢），必须堵。</summary>
+        private static Vector2Int FindUrgentThreat(GomokuBoard board, StoneColor threatColor, StoneColor blockColor)
+        {
+            foreach (Vector2Int p in GetCandidates(board))
+            {
+                // 模拟对手在此落子
+                board.TryPlace(p.x, p.y, threatColor);
+                bool urgent = false;
+                int threatDx = 0, threatDy = 0;
+
+                // 检查是否形成开放四连（4连+两端都空 → 不可阻挡）
+                foreach (int[] dir in DIRS)
+                {
+                    int count = 1;
+                    int openEnds = 0;
+
+                    int nx = p.x + dir[0], ny = p.y + dir[1];
+                    while (board.IsInside(nx, ny) && board.GetCell(nx, ny) == threatColor) { count++; nx += dir[0]; ny += dir[1]; }
+                    if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny)) openEnds++;
+
+                    nx = p.x - dir[0]; ny = p.y - dir[1];
+                    while (board.IsInside(nx, ny) && board.GetCell(nx, ny) == threatColor) { count++; nx -= dir[0]; ny -= dir[1]; }
+                    if (board.IsInside(nx, ny) && board.IsEmpty(nx, ny)) openEnds++;
+
+                    if (count >= 4 && openEnds >= 2) { urgent = true; threatDx = dir[0]; threatDy = dir[1]; break; }
+                }
+
+                board.TryUndoLast(out _);
+
+                // 找到紧急威胁，直接抢占对手要下的位置
+                if (urgent) return p;
             }
             return new Vector2Int(-1, -1);
         }

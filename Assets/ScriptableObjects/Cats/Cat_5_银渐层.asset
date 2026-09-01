@@ -17,7 +17,7 @@ MonoBehaviour:
   portrait: {fileID: 21300000, guid: 18211769fc12dec4d8c0b99bff1455b8, type: 3}
   difficulty: 4
   aiSearchDepth: 5
-  aiScoreMultiplier: 1.2
+  aiScoreMultiplier: 1.8
   winReward: 80
   challengeCost: 12
   unlockType: 2
