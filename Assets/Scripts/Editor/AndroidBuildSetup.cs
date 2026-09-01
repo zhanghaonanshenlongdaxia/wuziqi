@@ -9,7 +9,7 @@ public static class AndroidBuildSetup
     {
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.zhanghaonan.xianmiao.wuziqi");
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7 | AndroidArchitecture.ARM64;
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
         PlayerSettings.bundleVersion = "1.0.0";
         PlayerSettings.Android.bundleVersionCode = 1;
         PlayerSettings.companyName = "ZhangHaoNan";

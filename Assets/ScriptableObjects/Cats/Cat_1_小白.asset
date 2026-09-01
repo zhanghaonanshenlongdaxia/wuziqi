@@ -19,7 +19,7 @@ MonoBehaviour:
   aiSearchDepth: 1
   aiScoreMultiplier: 0.6
   winReward: 15
-  challengeCost: 3
+  challengeCost: 0
   unlockType: 0
   coinCost: 0
   framesDir: 小白

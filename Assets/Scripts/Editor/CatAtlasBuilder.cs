@@ -58,6 +58,14 @@ namespace Wuziqi.Editor
                 };
                 atlas.SetTextureSettings(textureSettings);
 
+                // 强制设置压缩（通过 SerializedObject）
+                var so = new SerializedObject(atlas);
+                var texSettings = so.FindProperty("m_EditorData.textureSettings");
+                texSettings.FindPropertyRelative("textureCompression").intValue = 3; // HighQuality
+                texSettings.FindPropertyRelative("maxTextureSize").intValue = 1024;
+                texSettings.FindPropertyRelative("compressionQuality").intValue = 50;
+                so.ApplyModifiedProperties();
+
                 // 收集该猫所有子文件夹的 PNG
                 string[] pngs = Directory.GetFiles(catDir, "*.png", SearchOption.AllDirectories);
                 foreach (string png in pngs)
