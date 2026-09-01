@@ -146,9 +146,17 @@ namespace Wuziqi.UI
             if (activeConfirmDialog) { Destroy(activeConfirmDialog.gameObject); activeConfirmDialog = null; }
             if (CatManager.Instance != null)
                 CatManager.Instance.SelectCat(previewIndex);
+
+            // 切换猫猫时强制重置棋局（不扣体力，仅重置棋盘）
             var gm = GameManager.Instance;
-            if (gm != null && !gm.IsGameOver && gm.Board.MoveCount > 0)
-                gm.TryRestart();
+            if (gm != null)
+            {
+                gm.Restart();
+                // 每次切换猫猫扣挑战费用
+                var cat = CatManager.Instance?.Selected;
+                if (cat != null && cat.challengeCost > 0 && EconomyManager.Instance != null)
+                    EconomyManager.Instance.SpendCoins(cat.challengeCost);
+            }
             Close();
         }
 

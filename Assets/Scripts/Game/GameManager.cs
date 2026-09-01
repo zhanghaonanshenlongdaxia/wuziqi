@@ -158,16 +158,6 @@ namespace Wuziqi.Game
             Result = result;
             GameRecordManager.Instance?.FinishRecording(result);
 
-            // 玩家赢了，奖励金币
-            bool playerWon = (result == GameResult.BlackWin && playerColor == StoneColor.Black)
-                          || (result == GameResult.WhiteWin && playerColor == StoneColor.White);
-            if (playerWon)
-            {
-                var cat = CatManager.Instance?.Selected;
-                if (cat != null && EconomyManager.Instance != null)
-                    EconomyManager.Instance.AddCoins(cat.winReward);
-            }
-
             GameEnded?.Invoke(result, winLine);
         }
 
@@ -219,22 +209,36 @@ namespace Wuziqi.Game
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }
 
-        /// <summary>尝试重开一局，先扣体力和挑战费用。不足返回false。</summary>
-        public bool TryRestart()
+        /// <summary>尝试重开一局，先扣体力和挑战费用。不足返回false。
+        /// reason: 输出失败原因（"energy" / "coins" / null）</summary>
+        public bool TryRestart(out string reason)
         {
+            reason = null;
             if (EconomyManager.Instance != null && !EconomyManager.Instance.TryStartGame())
+            {
+                reason = "energy";
                 return false;
+            }
 
             // 扣挑战费用
             var cat = CatManager.Instance?.Selected;
             if (cat != null && cat.challengeCost > 0 && EconomyManager.Instance != null)
             {
                 if (!EconomyManager.Instance.SpendCoins(cat.challengeCost))
+                {
+                    reason = "coins";
                     return false; // 仙喵币不足
+                }
             }
 
             Restart();
             return true;
+        }
+
+        /// <summary>兼容旧调用。</summary>
+        public bool TryRestart()
+        {
+            return TryRestart(out _);
         }
     }
 }

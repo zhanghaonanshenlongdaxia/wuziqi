@@ -59,3 +59,8 @@ Packages/com.unity.collections/
 
 # Release keystore (do not commit to public repos)
 release.jks
+
+# Build outputs & logs
+apk/
+*.log
+keystore_password.txt

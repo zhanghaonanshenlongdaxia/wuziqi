@@ -22,6 +22,7 @@ namespace Wuziqi.UI
         [SerializeField] private GameObject resultDialog;
         [SerializeField] private TMP_Text resultText;
         [SerializeField] private TMP_Text turnText;
+        [SerializeField] private TMP_Text moveCountText;
 
         [Header("体力不足弹窗")]
         [SerializeField] private EnergyInsufficientPanel energyInsufficientPanel;
@@ -172,9 +173,9 @@ namespace Wuziqi.UI
         private void OnRestartClicked()
         {
             PlayOneShot(clickClip);
-            if (!gameManager.TryRestart())
+            if (!gameManager.TryRestart(out string reason))
             {
-                // 体力不足，弹出提示
+                // 体力或金币不足，弹出提示
                 if (energyInsufficientPanel != null)
                 {
                     float waitSeconds = EconomyManager.Instance != null
@@ -202,9 +203,8 @@ namespace Wuziqi.UI
 
         private void UpdateMoveCountText()
         {
-            var t = GameObject.Find("Canvas/LeftPanel/GameInfo/InfoText");
-            if (t != null && t.TryGetComponent(out TMPro.TMP_Text txt))
-                txt.text = $"第 {gameManager.Board.MoveCount} 手";
+            if (moveCountText != null)
+                moveCountText.text = $"第 {gameManager.Board.MoveCount} 手";
         }
 
         private void PlayOneShot(AudioClip clip)

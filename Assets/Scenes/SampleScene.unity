@@ -5520,6 +5520,7 @@ GameObject:
   - component: {fileID: 643133298}
   - component: {fileID: 643133297}
   - component: {fileID: 643133296}
+  - component: {fileID: 643133299}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -5612,6 +5613,18 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
+--- !u!114 &643133299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 643133294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36accacc39007214681f2b97899dcf97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &647701588
 GameObject:
   m_ObjectHideFlags: 0
@@ -8475,6 +8488,7 @@ MonoBehaviour:
   resultDialog: {fileID: 1848407861}
   resultText: {fileID: 707420237}
   turnText: {fileID: 2028475858}
+  moveCountText: {fileID: 398884988}
   energyInsufficientPanel: {fileID: 1379794651}
   sfxSource: {fileID: 988389979}
   stoneClip: {fileID: 8300000, guid: 3d55e77d9adacf84e9fe55dd0a8ce47c, type: 3}
