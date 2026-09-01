@@ -15,7 +15,7 @@ public static class AndroidBuildSetup
         PlayerSettings.companyName = "ZhangHaoNan";
         PlayerSettings.productName = "仙喵五子棋";
 
-        // minSdk 24 (Android 7.0, Dirichlet SDK 要求), targetSdk 自动
+        // minSdk 24 (Android 7.0), targetSdk 自动
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
 
         AssetDatabase.SaveAssets();

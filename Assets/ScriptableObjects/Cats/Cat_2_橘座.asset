@@ -18,8 +18,8 @@ MonoBehaviour:
   difficulty: 2
   aiSearchDepth: 2
   aiScoreMultiplier: 0.8
-  winReward: 15
-  challengeCost: 3
+  winReward: 25
+  challengeCost: 5
   unlockType: 0
   coinCost: 0
   framesDir: 橘座

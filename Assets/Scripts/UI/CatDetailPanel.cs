@@ -60,7 +60,6 @@ namespace Wuziqi.UI
                 else
                     unlockStatus.text = cat.unlockType switch
                     {
-                        CatProfile.UnlockType.Ad => "未解锁（看广告）",
                         CatProfile.UnlockType.Coins => $"未解锁（{cat.coinCost} 仙喵币）",
                         _ => "未解锁",
                     };

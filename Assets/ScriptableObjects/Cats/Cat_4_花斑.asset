@@ -18,9 +18,9 @@ MonoBehaviour:
   difficulty: 3
   aiSearchDepth: 3
   aiScoreMultiplier: 1.2
-  winReward: 30
-  challengeCost: 6
-  unlockType: 1
-  coinCost: 0
+  winReward: 50
+  challengeCost: 8
+  unlockType: 2
+  coinCost: 80
   framesDir: 花斑
 

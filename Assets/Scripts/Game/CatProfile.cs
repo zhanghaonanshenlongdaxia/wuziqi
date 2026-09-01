@@ -27,6 +27,6 @@ namespace Wuziqi.Game
         [Header("帧素材")]
         public string framesDir = "idle";
 
-        public enum UnlockType { Free, Ad, Coins }
+        public enum UnlockType { Free, Coins }
     }
 }

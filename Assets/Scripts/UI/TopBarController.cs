@@ -6,7 +6,7 @@ using Wuziqi.Game;
 
 namespace Wuziqi.UI
 {
-    /// <summary>右上角按钮组 + 左上角体力/仙喵币显示控制器。</summary>
+    /// <summary>右上角按钮组 + 左上角仙喵币显示控制器。</summary>
     public class TopBarController : MonoBehaviour
     {
         [Header("右上角按钮")]
@@ -19,18 +19,14 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text energyText;
         [SerializeField] private Button energyAddButton;
         [SerializeField] private TMP_Text coinsText;
-        [SerializeField] private Button coinsAddButton;
 
         [Header("弹窗引用")]
         [SerializeField] private GameObject settingsPanel;
         [SerializeField] private GameObject catSelectPanel;
         [SerializeField] private ConfirmDialog confirmDialogPrefab;
-        [SerializeField] private GameObject rewardPanel;
         [SerializeField] private GameObject songListPanel;
-        [SerializeField] private EnergyInsufficientPanel energyInsufficientPanel;
         [SerializeField] private GameObject dimMask;  // 全屏半透明遮罩
 
-        private Coroutine energyFlashCoroutine;
         private ConfirmDialog activeConfirmDialog;
 
         private void Start()
@@ -39,68 +35,32 @@ namespace Wuziqi.UI
             catSelectButton.onClick.AddListener(OpenCatSelect);
             exitButton.onClick.AddListener(OpenExitConfirm);
             if (songListButton) songListButton.onClick.AddListener(OpenSongList);
-            energyAddButton.onClick.AddListener(OpenReward);
-            coinsAddButton.onClick.AddListener(OpenReward);
+
+            // 体力系统已移除，显示无限
+            if (energyText) energyText.text = "体力 ∞";
+            if (energyAddButton) energyAddButton.gameObject.SetActive(false);
 
             if (settingsPanel) settingsPanel.SetActive(false);
             if (catSelectPanel) catSelectPanel.SetActive(false);
-            if (rewardPanel) rewardPanel.SetActive(false);
             if (songListPanel) songListPanel.SetActive(false);
             if (dimMask) dimMask.SetActive(false);
 
             UpdateDisplay();
             if (Wuziqi.Game.EconomyManager.Instance != null)
-            {
                 Wuziqi.Game.EconomyManager.Instance.OnChanged += UpdateDisplay;
-                Wuziqi.Game.EconomyManager.Instance.OnEnergyInsufficient += OnEnergyInsufficient;
-            }
         }
 
         private void OnDestroy()
         {
             if (Wuziqi.Game.EconomyManager.Instance != null)
-            {
                 Wuziqi.Game.EconomyManager.Instance.OnChanged -= UpdateDisplay;
-                Wuziqi.Game.EconomyManager.Instance.OnEnergyInsufficient -= OnEnergyInsufficient;
-            }
         }
 
         public void UpdateDisplay()
         {
             var eco = Wuziqi.Game.EconomyManager.Instance;
             if (eco == null) return;
-            if (energyText) energyText.text = $"体力 {eco.Energy}/{eco.EnergyMax}";
             if (coinsText) coinsText.text = $"仙喵币 {eco.Coins}";
-        }
-
-        /// <summary>体力不足时闪烁体力文字。</summary>
-        private void OnEnergyInsufficient(float waitSeconds)
-        {
-            if (energyFlashCoroutine != null) StopCoroutine(energyFlashCoroutine);
-            energyFlashCoroutine = StartCoroutine(FlashEnergyText());
-
-            // 同时弹出体力不足面板
-            if (energyInsufficientPanel != null)
-                energyInsufficientPanel.Show(waitSeconds);
-        }
-
-        private IEnumerator FlashEnergyText()
-        {
-            if (energyText == null) yield break;
-
-            Color originalColor = energyText.color;
-            Color flashColor = Color.red;
-            float flashDuration = 0.3f;
-            int flashCount = 3;
-
-            for (int i = 0; i < flashCount; i++)
-            {
-                energyText.color = flashColor;
-                yield return new WaitForSeconds(flashDuration);
-                energyText.color = originalColor;
-                yield return new WaitForSeconds(flashDuration);
-            }
-            energyFlashCoroutine = null;
         }
 
         private void OpenSettings()
@@ -141,13 +101,6 @@ namespace Wuziqi.UI
             );
         }
 
-        private void OpenReward()
-        {
-            if (dimMask) dimMask.SetActive(true);
-            if (rewardPanel) rewardPanel.SetActive(true);
-            GameManager.Instance?.PauseGame();
-        }
-
         private void OpenSongList()
         {
             if (dimMask) dimMask.SetActive(true);
@@ -161,9 +114,7 @@ namespace Wuziqi.UI
             if (settingsPanel) settingsPanel.SetActive(false);
             if (catSelectPanel) catSelectPanel.SetActive(false);
             if (activeConfirmDialog) { Destroy(activeConfirmDialog.gameObject); activeConfirmDialog = null; }
-            if (rewardPanel) rewardPanel.SetActive(false);
             if (songListPanel) songListPanel.SetActive(false);
-            if (energyInsufficientPanel != null) energyInsufficientPanel.gameObject.SetActive(false);
             if (dimMask) dimMask.SetActive(false);
             GameManager.Instance?.ResumeGame();
         }

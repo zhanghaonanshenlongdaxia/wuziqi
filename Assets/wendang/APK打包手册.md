@@ -77,17 +77,7 @@ ld.lld: error: Packages/com.unity.burst/libs/burstRTL_l32.a(...) is incompatible
 
 **修复**：已删除 `Packages/com.unity.burst/libs/` 整个目录。如果恢复 burst 包后再次出现，删掉该目录即可。
 
-### 错误 2：Duplicate class
-
-```
-Duplicate class com.tapsdk.tapad.xxx found in modules jetified-DirichletAD_Mediation_5.1.2.3-runtime and jetified-DirichletAD_Mediation_5.2.1.4-runtime
-```
-
-**原因**：Dirichlet SDK 新旧两版 AAR 同时存在（更新时没删旧版）。
-
-**修复**：删除 `Assets/Plugins/Android/DirichletMediation/libs/` 下的旧版本 AAR（如 `*5.1.2.3*`），只保留最新版。
-
-### 错误 3：模态弹窗阻塞
+### 错误 2：模态弹窗阻塞
 
 如果 MCP 工具报 `A modal dialog is blocking the Unity editor main thread`，说明有弹窗（如 Build failure），用 `unity_dialog click` 关掉再继续。
 

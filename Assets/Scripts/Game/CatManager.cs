@@ -56,15 +56,6 @@ namespace Wuziqi.Game
             OnCatChanged?.Invoke(index);
         }
 
-        /// <summary>通过看广告解锁。</summary>
-        public void UnlockByAd(int index)
-        {
-            if (index < 0 || index >= cats.Length) return;
-            PlayerPrefs.SetInt(K_UnlockPrefix + index, 1);
-            PlayerPrefs.Save();
-            Debug.Log($"[CatManager] Cat {index} ({cats[index].catName}) unlocked via Ad");
-        }
-
         /// <summary>通过仙喵币解锁。</summary>
         public bool UnlockByCoins(int index)
         {

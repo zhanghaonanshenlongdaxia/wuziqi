@@ -18,8 +18,8 @@ MonoBehaviour:
   difficulty: 3
   aiSearchDepth: 3
   aiScoreMultiplier: 1.0
-  winReward: 20
-  challengeCost: 4
+  winReward: 35
+  challengeCost: 6
   unlockType: 0
   coinCost: 0
   framesDir: 黑炭

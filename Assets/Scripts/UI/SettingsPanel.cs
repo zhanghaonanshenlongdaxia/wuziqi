@@ -91,6 +91,7 @@ namespace Wuziqi.UI
             float mVol = PlayerPrefs.GetFloat(K_MusicVol, 1f);
             float sVol = PlayerPrefs.GetFloat(K_SFXVol, 1f);
 
+            // 音乐：控制 MusicPlayerUI 的 AudioSource
             var musicPlayer = FindAnyObjectByType<MusicPlayerUI>();
             if (musicPlayer != null)
             {
@@ -98,7 +99,15 @@ namespace Wuziqi.UI
                     ?.GetValue(musicPlayer) as AudioSource;
                 if (src != null) { src.mute = !mOn; src.volume = mVol; }
             }
-            AudioListener.volume = sOn ? sVol : 0f;
+
+            // 音效：控制 GameUIController 的 sfxSource
+            var gameUI = FindAnyObjectByType<GameUIController>();
+            if (gameUI != null)
+            {
+                var sfxSrc = typeof(GameUIController).GetField("sfxSource", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    ?.GetValue(gameUI) as AudioSource;
+                if (sfxSrc != null) { sfxSrc.mute = !sOn; sfxSrc.volume = sVol; }
+            }
         }
 
         private void Close()

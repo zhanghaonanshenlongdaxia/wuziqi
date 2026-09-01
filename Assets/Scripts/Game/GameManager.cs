@@ -209,16 +209,11 @@ namespace Wuziqi.Game
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }
 
-        /// <summary>尝试重开一局，先扣体力和挑战费用。不足返回false。
-        /// reason: 输出失败原因（"energy" / "coins" / null）</summary>
+        /// <summary>尝试重开一局，扣挑战费用。不足返回false。
+        /// reason: 输出失败原因（"coins" / null）</summary>
         public bool TryRestart(out string reason)
         {
             reason = null;
-            if (EconomyManager.Instance != null && !EconomyManager.Instance.TryStartGame())
-            {
-                reason = "energy";
-                return false;
-            }
 
             // 扣挑战费用
             var cat = CatManager.Instance?.Selected;

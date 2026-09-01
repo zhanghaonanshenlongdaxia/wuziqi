@@ -24,9 +24,6 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text turnText;
         [SerializeField] private TMP_Text moveCountText;
 
-        [Header("体力不足弹窗")]
-        [SerializeField] private EnergyInsufficientPanel energyInsufficientPanel;
-
         [Header("音频")]
         [SerializeField] private AudioSource sfxSource;
         [SerializeField] private AudioClip stoneClip;
@@ -156,18 +153,7 @@ namespace Wuziqi.UI
         private void OnUndoClicked()
         {
             PlayOneShot(undoClip != null ? undoClip : clickClip);
-            // 看广告才能悔棋
-            if (Wuziqi.Game.AdManager.Instance != null)
-            {
-                Wuziqi.Game.AdManager.Instance.ShowRewarded("undo", success =>
-                {
-                    if (success) gameManager.Undo();
-                });
-            }
-            else
-            {
-                gameManager.Undo();
-            }
+            gameManager.Undo();
         }
 
         private void OnRestartClicked()
@@ -175,13 +161,9 @@ namespace Wuziqi.UI
             PlayOneShot(clickClip);
             if (!gameManager.TryRestart(out string reason))
             {
-                // 体力或金币不足，弹出提示
-                if (energyInsufficientPanel != null)
-                {
-                    float waitSeconds = EconomyManager.Instance != null
-                        ? EconomyManager.Instance.GetNextRecoverySeconds() : 60f;
-                    energyInsufficientPanel.Show(waitSeconds);
-                }
+                // 仙喵币不足提示（不再有体力不足）
+                if (reason == "coins")
+                    Debug.Log("[GameUIController] 仙喵币不足，无法挑战");
             }
         }
 

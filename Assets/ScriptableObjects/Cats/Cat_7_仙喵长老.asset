@@ -18,9 +18,9 @@ MonoBehaviour:
   difficulty: 5
   aiSearchDepth: 6
   aiScoreMultiplier: 1.5
-  winReward: 100
-  challengeCost: 20
+  winReward: 200
+  challengeCost: 30
   unlockType: 2
-  coinCost: 100
+  coinCost: 500
   framesDir: 仙喵长老
 

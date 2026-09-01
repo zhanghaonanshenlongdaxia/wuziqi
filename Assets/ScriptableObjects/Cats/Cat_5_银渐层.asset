@@ -18,9 +18,9 @@ MonoBehaviour:
   difficulty: 4
   aiSearchDepth: 4
   aiScoreMultiplier: 1.0
-  winReward: 40
-  challengeCost: 8
-  unlockType: 1
-  coinCost: 0
+  winReward: 80
+  challengeCost: 12
+  unlockType: 2
+  coinCost: 150
   framesDir: 银渐层
 

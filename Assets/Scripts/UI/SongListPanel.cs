@@ -16,8 +16,8 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text messageText;
 
         // 曲目解锁配置（与 MusicPlayerUI tracks 对应）
-        // 前3首免费，4-6首10仙喵币，7-9首20仙喵币
-        private static readonly int[] coinCosts = { 0, 0, 0, 10, 10, 10, 20, 20, 20 };
+        // 前3首免费，4-6首20-30仙喵币，7-9首50-80仙喵币
+        private static readonly int[] coinCosts = { 0, 0, 0, 20, 20, 30, 50, 50, 80 };
         private const string K_Prefix = "Wuziqi.SongUnlock.";
 
         public static bool IsSongUnlocked(int index)

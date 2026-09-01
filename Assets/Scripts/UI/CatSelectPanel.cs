@@ -17,7 +17,6 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text descText;
         [SerializeField] private TMP_Text difficultyText;
         [SerializeField] private TMP_Text unlockHintText;
-        [SerializeField] private Button unlockAdButton;
         [SerializeField] private Button unlockCoinsButton;
 
         [Header("猫猫详情")]
@@ -35,7 +34,6 @@ namespace Wuziqi.UI
         {
             if (closeButton) closeButton.onClick.AddListener(Close);
             if (confirmButton) confirmButton.onClick.AddListener(Confirm);
-            if (unlockAdButton) unlockAdButton.onClick.AddListener(TryUnlockByAd);
             if (unlockCoinsButton) unlockCoinsButton.onClick.AddListener(TryUnlockByCoins);
             if (detailButton) detailButton.onClick.AddListener(ShowDetail);
         }
@@ -88,8 +86,15 @@ namespace Wuziqi.UI
             if (descText) descText.text = c.description;
             if (difficultyText) difficultyText.text = $"难度 {new string('★', c.difficulty)}{new string('☆', 5 - c.difficulty)}";
             if (unlockHintText) unlockHintText.text = !unlocked ? GetUnlockHint(c) : (isCurrent ? "出战中" : "已解锁");
-            if (unlockAdButton) unlockAdButton.gameObject.SetActive(!unlocked && c.unlockType == CatProfile.UnlockType.Ad);
-            if (unlockCoinsButton) unlockCoinsButton.gameObject.SetActive(!unlocked && c.unlockType == CatProfile.UnlockType.Coins);
+            if (unlockCoinsButton)
+            {
+                unlockCoinsButton.gameObject.SetActive(!unlocked);
+                if (!unlocked)
+                {
+                    var btnLabel = unlockCoinsButton.GetComponentInChildren<TMPro.TMP_Text>();
+                    if (btnLabel != null) btnLabel.text = $"解锁（{c.coinCost}仙喵币）";
+                }
+            }
             if (confirmButton)
             {
                 confirmButton.interactable = unlocked && !isCurrent;
@@ -107,7 +112,6 @@ namespace Wuziqi.UI
         {
             return c.unlockType switch
             {
-                CatProfile.UnlockType.Ad => "看广告解锁",
                 CatProfile.UnlockType.Coins => $"{c.coinCost} 仙喵币解锁",
                 _ => "免费",
             };
@@ -158,25 +162,6 @@ namespace Wuziqi.UI
                     EconomyManager.Instance.SpendCoins(cat.challengeCost);
             }
             Close();
-        }
-
-        private void TryUnlockByAd()
-        {
-            if (AdManager.Instance != null)
-                AdManager.Instance.ShowRewarded("unlock_cat_" + previewIndex, success =>
-                {
-                    if (success && CatManager.Instance != null)
-                    {
-                        CatManager.Instance.UnlockByAd(previewIndex);
-                        if (unlockHintText) unlockHintText.text = "解锁成功！";
-                        BuildGrid();
-                        Preview(previewIndex);
-                    }
-                    else if (!success)
-                    {
-                        if (unlockHintText) unlockHintText.text = "观看完整广告才能解锁";
-                    }
-                });
         }
 
         private void TryUnlockByCoins()

@@ -18,9 +18,9 @@ MonoBehaviour:
   difficulty: 4
   aiSearchDepth: 5
   aiScoreMultiplier: 1.2
-  winReward: 60
-  challengeCost: 12
+  winReward: 120
+  challengeCost: 18
   unlockType: 2
-  coinCost: 50
+  coinCost: 200
   framesDir: 玄猫
 
