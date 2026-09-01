@@ -12,15 +12,52 @@ public class MainMenuController : MonoBehaviour
     [Header("Roots")]
     public GameObject gamePlayRoot;
 
-    [Header("问候弹窗")]
+    [Header("弹窗预制体")]
     [SerializeField] private ConfirmDialog confirmDialogPrefab;
 
     private ConfirmDialog activeDialog;
+    private const string PRIVACY_KEY = "PrivacyAccepted";
 
     private void Awake()
     {
-        if (startButton) startButton.onClick.AddListener(EnterGame);
+        if (startButton) startButton.onClick.AddListener(OnStartClicked);
         if (exitButton) exitButton.onClick.AddListener(ExitGame);
+    }
+
+    private void Start()
+    {
+        if (PlayerPrefs.GetInt(PRIVACY_KEY, 0) == 0)
+            ShowPrivacyDialog();
+    }
+
+    private void OnStartClicked()
+    {
+        if (PlayerPrefs.GetInt(PRIVACY_KEY, 0) == 0) return; // 未同意前不允许开始
+        EnterGame();
+    }
+
+    private void ShowPrivacyDialog()
+    {
+        if (confirmDialogPrefab == null) return;
+        activeDialog = Instantiate(confirmDialogPrefab, transform.root);
+        activeDialog.transform.SetAsLastSibling();
+        activeDialog.Show(
+            message: "本游戏基于Unity引擎开发，可能收集Android ID及设备传感器信息用于运行优化。\n\n<link=\"https://share.note.youdao.com/s/MXaGaQpT\"><color=#3366CC><u>查看隐私政策</u></color></link>",
+            onConfirm: () =>
+            {
+                PlayerPrefs.SetInt(PRIVACY_KEY, 1);
+                PlayerPrefs.Save();
+                if (activeDialog) { Destroy(activeDialog.gameObject); activeDialog = null; }
+            },
+            onCancel: () =>
+            {
+                if (activeDialog) { Destroy(activeDialog.gameObject); activeDialog = null; }
+                ExitGame();
+            },
+            title: "隐私政策",
+            confirmText: "同意",
+            cancelText: "拒绝"
+        );
     }
 
     private void EnterGame()

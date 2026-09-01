@@ -27,12 +27,6 @@ namespace Wuziqi.UI
         }
 
         /// <summary>显示确认弹窗。</summary>
-        /// <param name="message">提示文本</param>
-        /// <param name="onConfirm">确认回调</param>
-        /// <param name="onCancel">取消回调（可选）</param>
-        /// <param name="title">标题（可选，默认"提示"）</param>
-        /// <param name="confirmText">确认按钮文本（可选，默认"确认"）</param>
-        /// <param name="cancelText">取消按钮文本（可选，默认"取消"）</param>
         public void Show(string message, Action onConfirm, Action onCancel = null,
                          string title = null, string confirmText = null, string cancelText = null)
         {
@@ -50,10 +44,7 @@ namespace Wuziqi.UI
 
             // 没传onCancel时隐藏取消按钮（如问候弹窗）
             bool showCancel = onCancel != null || cancelText != null;
-            if (cancelLabel)
-            {
-                cancelLabel.text = cancelText ?? "取消";
-            }
+            if (cancelLabel) cancelLabel.text = cancelText ?? "取消";
             if (cancelButton) cancelButton.gameObject.SetActive(showCancel);
 
             gameObject.SetActive(true);
