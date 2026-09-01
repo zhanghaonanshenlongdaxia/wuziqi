@@ -56,3 +56,6 @@ Packages/com.unity.collections/
 *apikey*
 *api_key*
 *secret*
+
+# Release keystore (do not commit to public repos)
+release.jks
