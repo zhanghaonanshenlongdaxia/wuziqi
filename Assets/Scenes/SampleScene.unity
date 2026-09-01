@@ -4245,11 +4245,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0aa1d9de5e746e24f83c8d412d5b152b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   startButton: {fileID: 1331025948}
   exitButton: {fileID: 688676273}
   gamePlayRoot: {fileID: 1912284249}
+  confirmDialogPrefab: {fileID: 3911761530740779122, guid: a17e9ea07d4381d42bb9dbe588ec11a9, type: 3}
 --- !u!225 &434477166
 CanvasGroup:
   m_ObjectHideFlags: 0
