@@ -161,7 +161,6 @@ namespace Wuziqi.UI
             PlayOneShot(clickClip);
             if (!gameManager.TryRestart(out string reason))
             {
-                // 仙喵币不足提示（不再有体力不足）
                 if (reason == "coins")
                     Debug.Log("[GameUIController] 仙喵币不足，无法挑战");
             }
@@ -193,7 +192,8 @@ namespace Wuziqi.UI
         {
             if (sfxSource != null && clip != null) sfxSource.PlayOneShot(clip);
         }
-                private void OnHistoryClicked()
+
+        private void OnHistoryClicked()
         {
             PlayOneShot(clickClip);
             HistoryPanel hp = FindObjectOfType<HistoryPanel>();

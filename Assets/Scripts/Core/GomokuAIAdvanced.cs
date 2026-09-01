@@ -17,7 +17,7 @@ namespace Wuziqi.Core
         private const long TWO_SCORE       =        200;
 
         private const float DEFENSE_WEIGHT = 0.9f;
-        private const int NEIGHBOR_RADIUS = 2;
+        private const int NEIGHBOR_RADIUS = 3;
 
         // 方向
         private static readonly int[][] DIRS = new int[][] {
@@ -117,7 +117,7 @@ namespace Wuziqi.Core
             });
 
             // 限制前瞻的候选数（避免太慢）
-            int limit = Mathf.Min(candidates.Count, depth <= 2 ? 12 : 8);
+            int limit = Mathf.Min(candidates.Count, depth <= 2 ? 15 : 12);
 
             for (int i = 0; i < limit; i++)
             {
@@ -182,7 +182,7 @@ namespace Wuziqi.Core
                 return sb.CompareTo(sa);
             });
 
-            int limit = Mathf.Min(candidates.Count, depth <= 1 ? 15 : 10);
+            int limit = Mathf.Min(candidates.Count, depth <= 1 ? 20 : 15);
             StoneColor next = Other(cur);
             long bestScore = long.MinValue;
 

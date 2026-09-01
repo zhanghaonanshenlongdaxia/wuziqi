@@ -18,13 +18,17 @@ public static class AndroidBuildRunner
 
     private static void Build(bool signed)
     {
+        // ── 版本号 ──
+        PlayerSettings.bundleVersion = "1.2.1";
+        PlayerSettings.Android.bundleVersionCode = 14;
+
         var scenes = new[] { "Assets/Scenes/SampleScene.unity" };
         var location = "Builds/Android/XianMiaoWuZiQi.apk";
 
         Directory.CreateDirectory("Builds/Android");
 
-        // 只打包 ARMv7（兼容性好，比 ARM64 的 IL2CPP 包体更小）
-        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
+        // 只打包 ARM64（64位）
+        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
 
         // ── 禁用 Burst（省掉 68MB libburst-llvm-16.so）──
         try
@@ -47,6 +51,17 @@ public static class AndroidBuildRunner
         }
         catch (System.Exception e) { Debug.LogWarning("[Build] 禁用 Burst 失败: " + e.Message); }
 
+        // ── 物理禁用 Burst .so（反射禁用不阻止打包 .so 文件）──
+        string burstPath = "Packages/com.unity.burst/libburst-llvm-16.so";
+        string burstBak = burstPath + ".bak";
+        bool burstRenamed = false;
+        if (File.Exists(burstPath))
+        {
+            File.Move(burstPath, burstBak);
+            burstRenamed = true;
+            Debug.Log("[Build] 已重命名 libburst-llvm-16.so → .bak（省68MB）");
+        }
+
         // 签名
         if (signed)
         {
@@ -59,11 +74,11 @@ public static class AndroidBuildRunner
         }
 
         // ── 包体优化 ──
-        // Mono + 裁剪: 移除未使用的引擎代码（比 IL2CPP 包体更小）
-        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
+        // IL2CPP + 裁剪（ARM64必须用IL2CPP）
+        PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
         PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.High);
 
-        Debug.Log($"开始打包: {location} (signed={signed}, ARMv7, Mono, Strip=High)");
+        Debug.Log($"开始打包: {location} (signed={signed}, ARM64, IL2CPP, Strip=High)");
 
         var options = signed
             ? BuildOptions.CompressWithLz4HC   // 签名包: LZ4HC 压缩
@@ -75,6 +90,13 @@ public static class AndroidBuildRunner
             BuildTarget.Android,
             options
         );
+
+        // ── 恢复 Burst .so ──
+        if (burstRenamed && File.Exists(burstBak))
+        {
+            File.Move(burstBak, burstPath);
+            Debug.Log("[Build] 已恢复 libburst-llvm-16.so");
+        }
 
         if (report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded)
         {

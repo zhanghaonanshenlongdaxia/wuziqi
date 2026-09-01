@@ -27,6 +27,18 @@ namespace Wuziqi.Game
         [Header("帧素材")]
         public string framesDir = "idle";
 
+        [Header("问候语")]
+        [TextArea(3, 6)] public string greetings = "";
+
+        /// <summary>运行时获取问候语数组（用 | 分隔）。</summary>
+        public string[] GetGreetings()
+        {
+            if (string.IsNullOrWhiteSpace(greetings)) return new string[0];
+            var arr = greetings.Split('|');
+            for (int i = 0; i < arr.Length; i++) arr[i] = arr[i].Trim();
+            return arr;
+        }
+
         public enum UnlockType { Free, Coins }
     }
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Wuziqi.Game;
+using Wuziqi.UI;
 
 public class MainMenuController : MonoBehaviour
 {
@@ -10,6 +11,11 @@ public class MainMenuController : MonoBehaviour
 
     [Header("Roots")]
     public GameObject gamePlayRoot;
+
+    [Header("问候弹窗")]
+    [SerializeField] private ConfirmDialog confirmDialogPrefab;
+
+    private ConfirmDialog activeDialog;
 
     private void Awake()
     {
@@ -33,6 +39,37 @@ public class MainMenuController : MonoBehaviour
 
         // 启动游戏逻辑
         if (GameManager.Instance) GameManager.Instance.StartGame();
+
+        // 暂停游戏，显示问候弹窗
+        if (GameManager.Instance) GameManager.Instance.PauseGame();
+        ShowGreetingDialog();
+    }
+
+    private void ShowGreetingDialog()
+    {
+        if (confirmDialogPrefab == null) { Debug.LogWarning("[Greeting] prefab is null"); return; }
+
+        var cat = CatManager.Instance?.Selected;
+        if (cat == null) { Debug.LogWarning("[Greeting] cat is null"); return; }
+        var greetings = cat.GetGreetings();
+        if (greetings.Length == 0) { Debug.LogWarning("[Greeting] greetings is empty for " + cat.catName); return; }
+
+        string greeting = greetings[Random.Range(0, greetings.Length)];
+        Debug.Log($"[Greeting] cat={cat.catName}, greeting={greeting}");
+
+        activeDialog = Instantiate(confirmDialogPrefab, transform.root);
+        activeDialog.transform.SetAsLastSibling();
+        activeDialog.Show(
+            message: greeting,
+            onConfirm: () =>
+            {
+                if (activeDialog) { Destroy(activeDialog.gameObject); activeDialog = null; }
+                if (GameManager.Instance) GameManager.Instance.ResumeGame();
+            },
+            title: cat.catName,
+            confirmText: "开始游戏"
+        );
+        Debug.Log("[Greeting] dialog shown");
     }
 
     private void ExitGame()

@@ -39,10 +39,22 @@ namespace Wuziqi.UI
             this.onConfirm = onConfirm;
             this.onCancel = onCancel;
 
-            if (titleText) titleText.text = title ?? "提示";
+            if (titleText)
+            {
+                bool hasTitle = !string.IsNullOrEmpty(title);
+                titleText.gameObject.SetActive(hasTitle);
+                if (hasTitle) titleText.text = title;
+            }
             if (messageText) messageText.text = message;
             if (confirmLabel) confirmLabel.text = confirmText ?? "确认";
-            if (cancelLabel) cancelLabel.text = cancelText ?? "取消";
+
+            // 没传onCancel时隐藏取消按钮（如问候弹窗）
+            bool showCancel = onCancel != null || cancelText != null;
+            if (cancelLabel)
+            {
+                cancelLabel.text = cancelText ?? "取消";
+            }
+            if (cancelButton) cancelButton.gameObject.SetActive(showCancel);
 
             gameObject.SetActive(true);
         }
