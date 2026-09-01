@@ -8604,14 +8604,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b6fc28b69cf1199498294f2ab11d8f0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  simulateAds: 1
-  mediaId: 1104883
-  mediaName: "\u4ED9\u55B5\u4E94\u5B50\u68CB"
-  mediaKey: dAsCddft4lgmAn6yuVeyiKbcP32a2hKtifiX4iPztkXVwqrOW4qJssZxobJsaVBVWZopMZiVfhCt84818Td9w40dqRINqsPs22JWd5dMJm6QaF3I10cl71pqbjQbHYxY
+  simulateAds: 0
+  mediaId: 1107264
+  mediaName: "\u55B5\u4ED9\u4E94\u5B50\u68CB"
+  mediaKey: ""
   gameChannel: domestic
-  tapClientId: 
-  rewardSlot: 1060035
-  interstitialSlot: 1060074
+  tapClientId: ""
+  rewardSpaceId: 1063337
+  interstitialSpaceId: 0
 --- !u!114 &988389987
 MonoBehaviour:
   m_ObjectHideFlags: 0
