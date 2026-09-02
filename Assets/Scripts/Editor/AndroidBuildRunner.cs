@@ -1,3 +1,4 @@
+using System;
 using UnityEditor;
 using UnityEngine;
 using System.IO;
@@ -18,13 +19,13 @@ public static class AndroidBuildRunner
 
     private static void Build(bool signed)
     {
-        // ── 版本号 ──
-        PlayerSettings.bundleVersion = "1.2.1";
-        PlayerSettings.Android.bundleVersionCode = 14;
+        // ── 版本号：versionCode 每次打包自增，文件名带版本且不覆盖旧包（可随时回传旧包）──
+        PlayerSettings.Android.bundleVersionCode += 1;
+        var location = $"Builds/Android/XianMiaoWuZiQi_v{PlayerSettings.bundleVersion}_b{PlayerSettings.Android.bundleVersionCode}.apk";
+        if (File.Exists(location))
+            location = location.Replace(".apk", $"_{DateTime.Now:yyyyMMdd_HHmmss}.apk");
 
         var scenes = new[] { "Assets/Scenes/SampleScene.unity" };
-        var location = "Builds/Android/XianMiaoWuZiQi.apk";
-
         Directory.CreateDirectory("Builds/Android");
 
         // 只打包 ARM64（64位）
