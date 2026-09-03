@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: win_1
   displayName: "\u521D\u51FA\u8305\u5E90"
   desc: "\u8D62\u5F97\u7B2C\u4E00\u5C40\u5BF9\u5C40"
+  icon: {fileID: 21300000, guid: f4104a3a5d45caa4ba1e8c351d093e67, type: 3}
   type: 0
   targetValue: 1
   rewardCoins: 10

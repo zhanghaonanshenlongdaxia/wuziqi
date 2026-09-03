@@ -11,6 +11,7 @@ namespace Wuziqi.UI
         [SerializeField] private Transform listRoot;      // Scroll/Viewport/Content
         [SerializeField] private Button closeButton;      // 关闭按钮
         [SerializeField] private AchievementItem achievementItemPrefab; // 条目模板（Assets/Prefabs/UI/AchievementItem.prefab）
+        [SerializeField] private Sprite hiddenIcon;       // 隐藏成就的问号图标
 
         private bool building;
 
@@ -54,6 +55,7 @@ namespace Wuziqi.UI
                 item.SetName(showDetail ? def.displayName : "？？？");
                 item.SetDesc(showDetail ? def.desc : "隐藏成就，继续探索喵…");
                 item.SetReward(def.rewardCoins);
+                item.SetIcon(showDetail ? def.icon : hiddenIcon);
                 if (unlocked)
                 {
                     item.SetUnlocked(true);

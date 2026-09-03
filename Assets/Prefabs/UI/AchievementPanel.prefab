@@ -53,6 +53,7 @@ MonoBehaviour:
   listRoot: {fileID: 4885027012229131561}
   closeButton: {fileID: 3564301649335363164}
   achievementItemPrefab: {fileID: 9203016544100938463, guid: 2f53914f90417d145bfcd25f014bd7b8, type: 3}
+  hiddenIcon: {fileID: 21300000, guid: 4395c8e267930a142b03864f300f10d3, type: 3}
 --- !u!1 &810099506572236577
 GameObject:
   m_ObjectHideFlags: 0

@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: song_3
   displayName: "\u66F2\u5E93\u6536\u85CF\u5BB6"
   desc: "\u89E3\u9501 3 \u9996\u66F2\u76EE"
+  icon: {fileID: 21300000, guid: 7d0388f3643198847b9080a979e5179e, type: 3}
   type: 8
   targetValue: 3
   rewardCoins: 10

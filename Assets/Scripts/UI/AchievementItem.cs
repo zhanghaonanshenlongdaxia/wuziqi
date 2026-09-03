@@ -12,6 +12,7 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text descText;      // 条件描述
         [SerializeField] private TMP_Text rewardText;    // 奖励币数（配 RewardIcon）
         [SerializeField] private TMP_Text progressText;  // "12/20"
+        [SerializeField] private Image achIcon;          // 成就图标（水墨小景）
 
         [Header("进度条")]
         [SerializeField] private Image progressFill;     // 宽度按比例拉伸
@@ -24,6 +25,13 @@ namespace Wuziqi.UI
         public void SetDesc(string v) { if (descText) descText.text = v; }
 
         public void SetReward(int coins) { if (rewardText) rewardText.text = $"+{coins}"; }
+
+        public void SetIcon(Sprite icon)
+        {
+            if (achIcon == null) return;
+            achIcon.gameObject.SetActive(icon != null);
+            if (icon != null) achIcon.sprite = icon;
+        }
 
         public void SetProgress(int cur, int max)
         {

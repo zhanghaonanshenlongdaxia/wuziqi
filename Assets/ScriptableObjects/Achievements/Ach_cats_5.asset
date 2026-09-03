@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: cats_5
   displayName: "\u7FA4\u732B\u73AF\u7ED5"
   desc: "\u89E3\u9501 5 \u53EA\u732B\u732B"
+  icon: {fileID: 21300000, guid: 3f461dc851d95404d8158343700ee036, type: 3}
   type: 3
   targetValue: 5
   rewardCoins: 30

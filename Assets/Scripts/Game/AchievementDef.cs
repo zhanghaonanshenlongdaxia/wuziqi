@@ -8,6 +8,7 @@ namespace Wuziqi.Game
         public string achId;            // 唯一 ID（如 win_20）
         public string displayName;      // 名称（水墨+幽默风）
         [TextArea] public string desc;  // 条件描述
+        public Sprite icon;             // 成就图标（水墨小景，宣纸底直接用）
         public AchType type;            // 判定类型
         public int targetValue;         // 目标值
         public int rewardCoins;         // 奖励仙喵币

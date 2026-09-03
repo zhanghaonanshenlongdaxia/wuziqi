@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: game_50
   displayName: "\u767E\u70BC\u6210\u94A2"
   desc: "\u7D2F\u8BA1\u5B8C\u6210 50 \u5C40\u5BF9\u5C40"
+  icon: {fileID: 21300000, guid: 95596f05cbba3f0419e033560a1ae57f, type: 3}
   type: 2
   targetValue: 50
   rewardCoins: 20

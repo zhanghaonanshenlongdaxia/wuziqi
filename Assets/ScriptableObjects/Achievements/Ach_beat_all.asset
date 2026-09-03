@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: beat_all
   displayName: "\u6EE1\u95E8\u722A\u7259"
   desc: "\u6218\u80DC\u8FC7\u6240\u6709 7 \u53EA\u732B"
+  icon: {fileID: 21300000, guid: 7a5c483ec514b6849a328caea6f50ccf, type: 3}
   type: 5
   targetValue: 7
   rewardCoins: 40

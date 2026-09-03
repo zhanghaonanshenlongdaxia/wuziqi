@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: cats_3
   displayName: "\u732B\u53E3\u666E\u67E5"
   desc: "\u89E3\u9501 3 \u53EA\u732B\u732B"
+  icon: {fileID: 21300000, guid: 18207c6d9c793c24eb8e2404bc35cd30, type: 3}
   type: 3
   targetValue: 3
   rewardCoins: 15

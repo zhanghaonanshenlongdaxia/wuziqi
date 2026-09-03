@@ -15,6 +15,7 @@ MonoBehaviour:
   achId: coin_100
   displayName: "\u7B2C\u4E00\u6876\u91D1"
   desc: "\u7D2F\u8BA1\u83B7\u5F97 100 \u4ED9\u55B5\u5E01"
+  icon: {fileID: 21300000, guid: 3e089792507d41244a2bf702b19611ed, type: 3}
   type: 6
   targetValue: 100
   rewardCoins: 10
