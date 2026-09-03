@@ -3359,7 +3359,7 @@ MonoBehaviour:
   m_text: "\u518D\u6765\u4E00\u5C40"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
-  m_sharedMaterial: {fileID: 1216088722}
+  m_sharedMaterial: {fileID: 8331769143472157965, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -6459,7 +6459,7 @@ MonoBehaviour:
   m_text: "\u4F60\u8D62\u4E86"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
-  m_sharedMaterial: {fileID: 1216088722}
+  m_sharedMaterial: {fileID: 8331769143472157965, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -8844,7 +8844,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 3c0d1754578c52940be2e5ee472a4dc3, type: 2}
   - {fileID: 11400000, guid: eecc6c6ad82e90b4bb5347e98185e4ce, type: 2}
   toastFont: {fileID: 11400000, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
-  toastBgSprite: {fileID: 21300000, guid: d3a2bdfcdc34fe54c84ef37f24198552, type: 3}
+  unlockClip: {fileID: 8300000, guid: 6af83326d911d5e459684136dc860400, type: 3}
+  achievementPopupPrefab: {fileID: 3730474213426637908, guid: 65dd88f9bd1475c4da98552512e386e2, type: 3}
 --- !u!114 &988389989
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15623,7 +15624,7 @@ MonoBehaviour:
   m_text: "\u67E5\u770B\u68CB\u76D8"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
-  m_sharedMaterial: {fileID: 1216088722}
+  m_sharedMaterial: {fileID: 8331769143472157965, guid: 922650b2e5ed7ba4a9e0c9a644c09871, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

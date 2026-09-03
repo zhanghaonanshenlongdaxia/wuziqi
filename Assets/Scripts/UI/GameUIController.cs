@@ -139,6 +139,17 @@ namespace Wuziqi.UI
                 if (streakBonus > 0)
                     Debug.Log($"[GameUIController] 金币奖励: 基础{baseReward} + 连胜加成{streakBonus} = {totalReward}");
             }
+            else if (result != GameResult.Draw)
+            {
+                // 连败安抚：连败第 3 局猫台词安慰（提示卡由 GameManager.EndGame 统一发）
+                if (gameManager != null && gameManager.LossStreakGames == 3)
+                {
+                    var cc = FindObjectOfType<CharacterController>();
+                    var catName = CatManager.Instance != null && CatManager.Instance.Selected != null
+                        ? CatManager.Instance.Selected.catName : "猫猫";
+                    if (cc != null) cc.ShowBubble($"连败别灰心喵！{catName}送你一张提示卡，翻盘就在下一局！", 4f, true);
+                }
+            }
 
             UpdateItemButtons();
             StartCoroutine(ShowDialogAfter(0.7f));

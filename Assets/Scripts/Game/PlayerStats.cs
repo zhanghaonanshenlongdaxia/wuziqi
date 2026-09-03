@@ -133,6 +133,41 @@ namespace Wuziqi.Game
             OnStatsChanged?.Invoke();
         }
 
+        // ---------- GM（仅编辑器 GM 面板调用） ----------
+
+        /// <summary>GM：灌满统计与每猫战绩（触发全部成就达成链路，用于验收弹窗/发币）。</summary>
+        public void GM_FillAll()
+        {
+            TotalGames = 999;
+            TotalWins = 999;
+            CurrentStreak = 0;
+            MaxStreak = 99;
+            CurrentLoseStreak = 0;
+            CoinEarnedTotal = 1000;
+            catStats.Clear();
+            var cm = CatManager.Instance;
+            if (cm != null)
+                for (int i = 0; i < cm.CatCount; i++)
+                {
+                    var c = cm.GetCat(i);
+                    if (c != null) catStats.Add(new CatStat { catName = c.catName, games = 99, wins = 99 });
+                }
+            Save();
+            OnStatsChanged?.Invoke();
+        }
+
+        /// <summary>GM：清空全部统计与成就解锁记录（成就可重新达成，用于复看效果）。</summary>
+        public void GM_ResetAll()
+        {
+            TotalGames = 0; TotalWins = 0;
+            CurrentStreak = 0; MaxStreak = 0; CurrentLoseStreak = 0;
+            CoinEarnedTotal = 0;
+            catStats.Clear();
+            unlockedIds.Clear();
+            Save();
+            OnStatsChanged?.Invoke();
+        }
+
         // ---------- 每猫统计 ----------
 
         public int GetCatGames(string catName) => GetOrCreate(catName).games;

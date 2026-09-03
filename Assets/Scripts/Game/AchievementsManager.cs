@@ -14,7 +14,8 @@ namespace Wuziqi.Game
 
         [SerializeField] private AchievementDef[] achievements;
         [SerializeField] private TMP_FontAsset toastFont;
-        [SerializeField] private Sprite toastBgSprite; // BgButtonMedium 横幅底
+        [SerializeField] private AudioClip unlockClip; // 成就解锁音效
+        [SerializeField] private GameObject achievementPopupPrefab; // Steam式成就弹窗预制体
 
         public AchievementDef[] Achievements => achievements;
 
@@ -22,11 +23,15 @@ namespace Wuziqi.Game
         public event Action<AchievementDef, int> OnUnlocked;
 
         private readonly Queue<(AchievementDef def, int reward)> toastQueue = new Queue<(AchievementDef, int)>();
-        private GameObject toastBanner;
-        private TMP_Text toastText;
-        private CanvasGroup toastGroup;
+        private GameObject popupCard;
+        private Image popupIcon;
+        private TMP_Text popupCaption;
+        private TMP_Text popupName;
+        private CanvasGroup popupGroup;
+        private AudioSource sfxSource;
         private Coroutine toastRoutine;
         private bool checking;
+        private Transform canvasRoot;
 
         private void Awake()
         {
@@ -36,9 +41,9 @@ namespace Wuziqi.Game
 
         private void Start()
         {
+            canvasRoot = FindObjectOfType<Canvas>().transform;
             if (PlayerStats.Instance != null) PlayerStats.Instance.OnStatsChanged += CheckAll;
             if (EconomyManager.Instance != null) EconomyManager.Instance.OnChanged += CheckAll;
-            BuildToast();
             CheckAll(); // 启动时补检（离线达成/版本更新遗漏）
         }
 
@@ -89,7 +94,7 @@ namespace Wuziqi.Game
 
                     toastQueue.Enqueue((def, def.rewardCoins));
                     OnUnlocked?.Invoke(def, def.rewardCoins);
-                    if (toastRoutine == null) toastRoutine = StartCoroutine(ToastLoop());
+                    if (toastRoutine == null) toastRoutine = StartCoroutine(PopupLoop());
                 }
             }
             finally { checking = false; }
@@ -124,62 +129,82 @@ namespace Wuziqi.Game
             return n;
         }
 
-        // ---------- Toast ----------
+        // ---------- 成就弹窗（Steam 式左下角卡片，预制体实例化） ----------
 
-        private void BuildToast()
+        private void BuildPopup()
         {
-            var canvas = FindObjectOfType<Canvas>();
-            if (canvas == null) return;
+            // 音源
+            sfxSource = gameObject.AddComponent<AudioSource>();
+            sfxSource.playOnAwake = false;
+            sfxSource.spatialBlend = 0f;
 
-            toastBanner = new GameObject("AchievementToast", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
-            var rt = (RectTransform)toastBanner.transform;
-            rt.SetParent(canvas.transform, false);
-            rt.anchorMin = new Vector2(0.5f, 1f);
-            rt.anchorMax = new Vector2(0.5f, 1f);
-            rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(0f, -96f);
-            rt.sizeDelta = new Vector2(880f, 76f);
-
-            var img = toastBanner.GetComponent<Image>();
-            img.sprite = toastBgSprite;
-            img.type = Image.Type.Sliced;
-            img.raycastTarget = false;
-
-            toastGroup = toastBanner.GetComponent<CanvasGroup>();
-            toastGroup.alpha = 0f;
-            toastGroup.blocksRaycasts = false;
-
-            var textGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-            var trt = (RectTransform)textGo.transform;
-            trt.SetParent(rt, false);
-            trt.offsetMin = new Vector2(24f, 8f);
-            trt.offsetMax = new Vector2(-24f, -8f);
-            toastText = textGo.GetComponent<TextMeshProUGUI>();
-            toastText.font = toastFont;
-            toastText.fontSize = 30;
-            toastText.color = new Color(0.23f, 0.22f, 0.20f);
-            toastText.alignment = TextAlignmentOptions.Center;
-            toastText.raycastTarget = false;
-
-            toastBanner.SetActive(false);
+            if (achievementPopupPrefab == null)
+                Debug.LogWarning("[AchievementsManager] achievementPopupPrefab 未接线，成就弹窗无法显示");
         }
 
-        private System.Collections.IEnumerator ToastLoop()
+        private System.Collections.IEnumerator PopupLoop()
         {
-            const float fade = 0.25f, hold = 2.0f;
+            const float ShowX = 40f, OffX = 520f;
+            const float slideIn = 0.35f, hold = 5.0f, slideOut = 0.3f, fade = 0.3f;
+
             while (toastQueue.Count > 0)
             {
                 var (def, reward) = toastQueue.Dequeue();
-                toastText.text = $"成就达成：{def.displayName}  +{reward} 仙喵币";
-                toastBanner.SetActive(true);
 
+                if (achievementPopupPrefab == null)
+                {
+                    Debug.LogWarning("[AchievementsManager] achievementPopupPrefab 未接线，跳过弹窗");
+                    continue;
+                }
+
+                // 实例化预制体并填充数据
+                popupCard = Instantiate(achievementPopupPrefab, canvasRoot);
+                popupCard.name = "AchievementPopup";
+                var rt = (RectTransform)popupCard.transform;
+                rt.anchoredPosition = new Vector2(ShowX - OffX, 40f);
+
+                popupIcon = popupCard.transform.Find("Icon")?.GetComponent<Image>();
+                popupCaption = popupCard.transform.Find("Caption")?.GetComponent<TMPro.TMP_Text>();
+                popupName = popupCard.transform.Find("Name")?.GetComponent<TMPro.TMP_Text>();
+                popupGroup = popupCard.GetComponent<CanvasGroup>() ?? popupCard.AddComponent<CanvasGroup>();
+
+                if (popupIcon != null)
+                {
+                    popupIcon.sprite = def.icon;
+                    popupIcon.gameObject.SetActive(def.icon != null);
+                }
+                if (popupCaption != null) popupCaption.text = "成就达成";
+                if (popupName != null) popupName.text = $"<b>{def.displayName}</b>  <color=#E6B84C>+{reward} 仙喵币</color>";
+
+                if (unlockClip != null && sfxSource != null) sfxSource.PlayOneShot(unlockClip);
+
+                // 滑入（左下角外 → 卡片位）
                 float t = 0f;
-                while (t < fade) { t += Time.unscaledDeltaTime; toastGroup.alpha = t / fade; yield return null; }
-                toastGroup.alpha = 1f;
+                while (t < slideIn)
+                {
+                    t += Time.unscaledDeltaTime;
+                    float k = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / slideIn), 3f);
+                    rt.anchoredPosition = new Vector2(Mathf.Lerp(ShowX - OffX, ShowX, k), 40f);
+                    popupGroup.alpha = Mathf.Clamp01(t / (fade * 0.7f));
+                    yield return null;
+                }
+                rt.anchoredPosition = new Vector2(ShowX, 40f);
+                popupGroup.alpha = 1f;
+
                 yield return new WaitForSecondsRealtime(hold);
+
+                // 滑出
                 t = 0f;
-                while (t < fade) { t += Time.unscaledDeltaTime; toastGroup.alpha = 1f - t / fade; yield return null; }
-                toastBanner.SetActive(false);
+                while (t < slideOut)
+                {
+                    t += Time.unscaledDeltaTime;
+                    float k = Mathf.Clamp01(t / slideOut);
+                    rt.anchoredPosition = new Vector2(Mathf.Lerp(ShowX, ShowX - OffX, k * k), 40f);
+                    popupGroup.alpha = 1f - k;
+                    yield return null;
+                }
+                Destroy(popupCard);
+                popupCard = null;
             }
             toastRoutine = null;
         }

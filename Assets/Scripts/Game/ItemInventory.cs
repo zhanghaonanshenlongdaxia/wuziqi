@@ -101,6 +101,15 @@ namespace Wuziqi.Game
             OnChanged?.Invoke();
         }
 
+        /// <summary>GM：直接设置道具库存。</summary>
+        public void GM_Set(int hint, int dbl)
+        {
+            HintCount = hint;
+            DoubleCount = dbl;
+            Save();
+            OnChanged?.Invoke();
+        }
+
         private void Save()
         {
             PlayerPrefs.SetInt(K_Hint, HintCount);

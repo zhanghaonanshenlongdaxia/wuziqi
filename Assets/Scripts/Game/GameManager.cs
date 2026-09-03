@@ -17,6 +17,18 @@ namespace Wuziqi.Game
         [Range(0.2f, 2f)] public float aiThinkTimeMin = 0.45f;
         [Range(0.2f, 3f)] public float aiThinkTimeMax = 1.0f;
 
+        [Header("新手保护（连败橡皮筋）")]
+        [Tooltip("留存保护总开关：连败越多，AI 故意失误的概率越高")]
+        public bool mercyEnabled = true;
+        [Tooltip("连败达到 loseStreakStart 局后开始放水")]
+        [Range(1, 5)] public int mercyLoseStreakStart = 2;
+        [Tooltip("每多连败一局增加的失误率(%)")]
+        [Range(0, 50)] public int mercyChancePerLoss = 15;
+        [Tooltip("失误率上限(%)")]
+        [Range(0, 100)] public int mercyMaxChance = 60;
+        [Tooltip("新手期（累计对局<3）的失误率(%)，帮助首战建立信心")]
+        [Range(0, 100)] public int rookieMercyChance = 60;
+
         public GomokuBoard Board { get; } = new GomokuBoard();
         public bool IsPlayerTurn { get; private set; } = true;
         public bool IsAIThinking { get; private set; }
@@ -137,6 +149,18 @@ namespace Wuziqi.Game
             IsAIThinking = false;
             aiRoutine = null;
 
+            // 新手保护：连败橡皮筋，按概率故意走偏（随机合法点）
+            int mercyChance = GetMercyChance();
+            if (mercyChance > 0 && UnityEngine.Random.Range(0, 100) < mercyChance)
+            {
+                Vector2Int? sloppy = PickRandomLegalMove();
+                if (sloppy.HasValue && sloppy.Value != result)
+                {
+                    result = sloppy.Value;
+                    Debug.Log($"[GameManager] 新手保护生效: 失误率{mercyChance}%，AI 故意走偏");
+                }
+            }
+
             if (result.x < 0 || !Board.TryPlace(result.x, result.y, aiColor))
             {
                 EndGame(GameResult.Draw, null);
@@ -160,15 +184,52 @@ namespace Wuziqi.Game
             return true;
         }
 
+        public int LossStreakGames { get; private set; }
+
         private void EndGame(GameResult result, IReadOnlyList<Vector2Int> winLine)
         {
             IsGameOver = true;
             IsPlayerTurn = false;
             IsAIThinking = false;
             Result = result;
+
+            bool playerWon = (result == GameResult.BlackWin && playerColor == StoneColor.Black)
+                          || (result == GameResult.WhiteWin && playerColor == StoneColor.White);
+            if (playerWon) LossStreakGames = 0;
+            else if (result != GameResult.Draw) LossStreakGames++;
+
+            // 连败安抚：连败第 3 局送提示卡（新手留存）
+            if (LossStreakGames == 3 && ItemInventory.Instance != null)
+                ItemInventory.Instance.AddHint();
+
             GameRecordManager.Instance?.FinishRecording(result);
 
             GameEnded?.Invoke(result, winLine);
+        }
+
+        /// <summary>当前 AI 故意失误的概率(%)：连败橡皮筋 + 新手期放水。</summary>
+        private int GetMercyChance()
+        {
+            if (!mercyEnabled) return 0;
+            var ps = PlayerStats.Instance;
+            if (ps == null) return 0;
+
+            // 新手期（累计对局<3）：直接给高失误率，首战建立信心
+            if (ps.TotalGames < 3) return rookieMercyChance;
+
+            // 连败橡皮筋：连败达到阈值后，每多败一局失误率递增
+            if (ps.CurrentLoseStreak < mercyLoseStreakStart) return 0;
+            return Mathf.Min(mercyMaxChance, (ps.CurrentLoseStreak - mercyLoseStreakStart + 1) * mercyChancePerLoss);
+        }
+
+        /// <summary>随机挑一个合法空点（新手保护用的"故意失误"）。</summary>
+        private Vector2Int? PickRandomLegalMove()
+        {
+            var empties = new List<Vector2Int>();
+            for (int x = 0; x < GomokuBoard.Size; x++)
+                for (int y = 0; y < GomokuBoard.Size; y++)
+                    if (Board.IsEmpty(x, y)) empties.Add(new Vector2Int(x, y));
+            return empties.Count > 0 ? empties[UnityEngine.Random.Range(0, empties.Count)] : (Vector2Int?)null;
         }
 
         /// <summary>悔棋：撤销到玩家再次行动（通常�?AI+玩家各一手）�?/summary>
