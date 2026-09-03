@@ -40,6 +40,8 @@ namespace Wuziqi.UI
         private RectTransform confirmRect; // 对号确认按钮（单层）
         private Image pendingGhost;        // 待落子棋子（半透明）
         private Image pendingHalo;         // 待落子棋子的高光环
+        private Image hintMarker;          // 提示道具的推荐点标记
+        private Coroutine hintFadeRoutine;
         private Image lastMarker;
         private Image winLine;
         private Sprite circleSprite;
@@ -80,6 +82,7 @@ namespace Wuziqi.UI
                 gameManager.StoneRemoved += OnStoneRemoved;
                 gameManager.BoardReset += OnBoardReset;
                 gameManager.GameEnded += OnGameEnded;
+                gameManager.HintShown += OnHintShown;
             }
             ShowPreview(false);
         }
@@ -91,6 +94,7 @@ namespace Wuziqi.UI
             gameManager.StoneRemoved -= OnStoneRemoved;
             gameManager.BoardReset -= OnBoardReset;
             gameManager.GameEnded -= OnGameEnded;
+            gameManager.HintShown -= OnHintShown;
         }
 
         private void CacheMetrics()
@@ -257,9 +261,35 @@ namespace Wuziqi.UI
             lastMarker.gameObject.SetActive(false);
             winLine = CreateRect(fxLayer, "WinLine", Vector2.zero, Vector2.zero, winLineColor, circleSprite);
             winLine.gameObject.SetActive(false);
+            hintMarker = CreateRect(fxLayer, "HintMarker", Vector2.zero, StonePixelSize() * 1.3f, new Color(1f, 0.9f, 0.4f, 0.85f), circleSprite);
+            hintMarker.gameObject.SetActive(false);
         }
 
         private Vector2 StonePixelSize() => Vector2.one * (cellSize * stoneSizeRatio);
+
+        // ---------- 提示道具 ----------
+
+        private void OnHintShown(Vector2Int cell)
+        {
+            hintMarker.rectTransform.anchoredPosition = CellToLocal(cell.x, cell.y);
+            hintMarker.gameObject.SetActive(true);
+            if (hintFadeRoutine != null) StopCoroutine(hintFadeRoutine);
+            hintFadeRoutine = StartCoroutine(HintFadeRoutine());
+        }
+
+        private IEnumerator HintFadeRoutine()
+        {
+            const float dur = 2.5f;
+            var c = hintMarker.color;
+            float t = 0f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                hintMarker.color = new Color(c.r, c.g, c.b, 0.85f * (1f - Mathf.Pow(t / dur, 2f)));
+                yield return null;
+            }
+            hintMarker.gameObject.SetActive(false);
+        }
 
         // ---------- 落子二次确认 ----------
 
@@ -361,6 +391,8 @@ namespace Wuziqi.UI
         private void OnStonePlaced(Vector2Int cell, StoneColor color)
         {
             HidePending();
+            if (hintFadeRoutine != null) { StopCoroutine(hintFadeRoutine); hintFadeRoutine = null; }
+            hintMarker.gameObject.SetActive(false);
             Image stone = CreateStone(cell, color);
             StartCoroutine(PopIn(stone.rectTransform));
             lastMarker.rectTransform.anchoredPosition = CellToLocal(cell.x, cell.y);

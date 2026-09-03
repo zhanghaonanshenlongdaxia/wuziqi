@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f23f4a5ba23340c429ea5f73d1ebd20b, type: 3}
+  m_Name: Ach_game_50
+  m_EditorClassIdentifier: 
+  achId: game_50
+  displayName: "\u767E\u70BC\u6210\u94A2"
+  desc: "\u7D2F\u8BA1\u5B8C\u6210 50 \u5C40\u5BF9\u5C40"
+  type: 2
+  targetValue: 50
+  rewardCoins: 20
+  hidden: 0

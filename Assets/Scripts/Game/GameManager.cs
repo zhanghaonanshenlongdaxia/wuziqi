@@ -72,6 +72,16 @@ namespace Wuziqi.Game
         }
 
         /// <summary>直接落子并广播事件（不驱动回合流程；用于演示/回放布局）�?/summary>
+        public event Action<Vector2Int> HintShown;
+
+        /// <summary>显示提示：算出 AI 推荐点并广播（道具消耗由调用方负责）。</summary>
+        public void ShowHint()
+        {
+            if (!CanPlayerPlaceNow) return;
+            var move = GomokuAIAdvanced.FindBestMove(Board.Copy(), playerColor, 3, 1.0f, rng);
+            HintShown?.Invoke(move);
+        }
+
         public void PlaceStoneDirect(int x, int y, StoneColor color)
         {
             if (!Board.TryPlace(x, y, color)) return;

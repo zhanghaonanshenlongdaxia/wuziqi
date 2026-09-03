@@ -15,6 +15,10 @@ public class MainMenuController : MonoBehaviour
     [Header("弹窗预制体")]
     [SerializeField] private ConfirmDialog confirmDialogPrefab;
 
+    [Header("成就")]
+    [SerializeField] private Button achievementButton;
+    [SerializeField] private Wuziqi.UI.AchievementPanel achievementPanelPrefab;
+
     private ConfirmDialog activeDialog;
     private const string PRIVACY_KEY = "PrivacyAccepted";
 
@@ -22,6 +26,15 @@ public class MainMenuController : MonoBehaviour
     {
         if (startButton) startButton.onClick.AddListener(OnStartClicked);
         if (exitButton) exitButton.onClick.AddListener(ExitGame);
+        if (achievementButton) achievementButton.onClick.AddListener(OnAchievementsClicked);
+    }
+
+    private void OnAchievementsClicked()
+    {
+        if (achievementPanelPrefab == null) return;
+        var panel = Instantiate(achievementPanelPrefab, transform.root);
+        panel.transform.SetAsLastSibling();
+        panel.Show();
     }
 
     private void Start()

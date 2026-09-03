@@ -23,6 +23,11 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text resultText;
         [SerializeField] private TMP_Text turnText;
         [SerializeField] private TMP_Text moveCountText;
+        [Header("道具")]
+        [SerializeField] private Button hintButton;
+        [SerializeField] private Button doubleButton;
+        [SerializeField] private GameObject hintCostGroup;   // 提示按钮的价格提示（库存0时显示）
+        [SerializeField] private GameObject doubleCostGroup; // 双倍按钮的价格提示
 
         [Header("音频")]
         [SerializeField] private AudioSource sfxSource;
@@ -54,6 +59,13 @@ namespace Wuziqi.UI
             if (reviewButton != null) reviewButton.onClick.AddListener(OnReviewClicked);
             if (historyButton != null) historyButton.onClick.AddListener(OnHistoryClicked);
             if (replayButton != null) replayButton.onClick.AddListener(OnReplayFromResult);
+            if (hintButton != null) hintButton.onClick.AddListener(OnHintClicked);
+            if (doubleButton != null) doubleButton.onClick.AddListener(OnDoubleClicked);
+            if (ItemInventory.Instance != null)
+            {
+                ItemInventory.Instance.OnChanged += UpdateItemButtons;
+                UpdateItemButtons();
+            }
 
             resultDialog.SetActive(false);
             UpdateTurnText(gameManager.IsPlayerTurn);
@@ -61,6 +73,7 @@ namespace Wuziqi.UI
 
         private void OnDestroy()
         {
+            if (ItemInventory.Instance != null) ItemInventory.Instance.OnChanged -= UpdateItemButtons;
             if (gameManager == null) return;
             gameManager.StonePlaced -= OnStonePlaced;
             gameManager.StoneRemoved -= OnStoneRemoved;
@@ -112,12 +125,22 @@ namespace Wuziqi.UI
                 int streak = CharacterController.WinStreak.Get();
                 int streakBonus = Mathf.Min(streak * 5, 50); // 每连胜+5，上限+50
                 int totalReward = baseReward + streakBonus;
+
+                // 双倍卡：本局激活则奖励翻倍
+                if (ItemInventory.Instance != null && ItemInventory.Instance.DoubleActive)
+                {
+                    totalReward *= 2;
+                    ItemInventory.Instance.ConsumeDouble();
+                }
+
                 EconomyManager.Instance.AddCoins(totalReward);
+                if (PlayerStats.Instance != null) PlayerStats.Instance.AddCoinEarned(totalReward);
 
                 if (streakBonus > 0)
                     Debug.Log($"[GameUIController] 金币奖励: 基础{baseReward} + 连胜加成{streakBonus} = {totalReward}");
             }
 
+            UpdateItemButtons();
             StartCoroutine(ShowDialogAfter(0.7f));
         }
 
@@ -186,6 +209,76 @@ namespace Wuziqi.UI
         {
             if (moveCountText != null)
                 moveCountText.text = $"第 {gameManager.Board.MoveCount} 手";
+        }
+
+        // ---------- 道具 ----------
+
+        private void OnHintClicked()
+        {
+            PlayOneShot(clickClip);
+            if (gameManager == null || !gameManager.CanPlayerPlaceNow) return;
+            var inv = ItemInventory.Instance;
+            if (inv == null) return;
+
+            if (inv.TryUseHint())
+            {
+                gameManager.ShowHint();
+            }
+            else if (EconomyManager.Instance != null && EconomyManager.Instance.SpendCoins(ItemInventory.HINT_COST))
+            {
+                inv.AddHint();
+                gameManager.ShowHint();
+            }
+            else
+            {
+                SetButtonLabel(hintButton, "币不足");
+                Invoke(nameof(UpdateItemButtons), 2f);
+                return;
+            }
+            UpdateItemButtons();
+        }
+
+        private void OnDoubleClicked()
+        {
+            PlayOneShot(clickClip);
+            var inv = ItemInventory.Instance;
+            if (inv == null || inv.DoubleActive) return;
+            if (gameManager == null || !gameManager.IsGameStarted || gameManager.IsGameOver) return;
+
+            if (inv.TryUseDouble()) { UpdateItemButtons(); return; }
+            if (EconomyManager.Instance != null && EconomyManager.Instance.SpendCoins(ItemInventory.DOUBLE_COST))
+            {
+                inv.AddDouble();
+                inv.TryUseDouble();
+                UpdateItemButtons();
+            }
+            else
+            {
+                SetButtonLabel(doubleButton, "币不足");
+                Invoke(nameof(UpdateItemButtons), 2f);
+            }
+        }
+
+        private void UpdateItemButtons()
+        {
+            var inv = ItemInventory.Instance;
+            if (inv == null) return;
+            SetButtonLabel(hintButton, $"提示 ×{inv.HintCount}");
+            SetButtonLabel(doubleButton, inv.DoubleActive ? "双倍生效中" : $"双倍 ×{inv.DoubleCount}");
+            if (doubleButton != null) doubleButton.interactable = !inv.DoubleActive;
+
+            // 价格提示：没库存时显示购买价，提醒玩家（与双倍是否生效无关）
+            if (hintCostGroup != null) hintCostGroup.SetActive(inv.HintCount <= 0);
+            if (doubleCostGroup != null) doubleCostGroup.SetActive(inv.DoubleCount <= 0);
+        }
+
+        private static void SetButtonLabel(Button b, string v)
+        {
+            if (b == null) return;
+            var tmp = b.GetComponentInChildren<TMPro.TMP_Text>();
+            if (tmp != null) { tmp.text = v; return; }
+            var legacy = b.GetComponentInChildren<UnityEngine.UI.Text>();
+            if (legacy != null) legacy.text = v;
         }
 
         private void PlayOneShot(AudioClip clip)
