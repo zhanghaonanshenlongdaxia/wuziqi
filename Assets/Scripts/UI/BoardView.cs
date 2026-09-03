@@ -17,6 +17,7 @@ namespace Wuziqi.UI
         [SerializeField] private Sprite blackStoneSprite;
         [SerializeField] private Sprite whiteStoneSprite;
         [SerializeField] private GameObject winEffectPrefab;
+        [SerializeField] private Sprite confirmSprite; // 落子二次确认的对号图标（水墨）
 
         [Header("样式")]
         [SerializeField] private Color lineColor = new Color(0.23f, 0.22f, 0.20f, 0.92f);
@@ -34,6 +35,11 @@ namespace Wuziqi.UI
         private RectTransform fxLayer;
         private readonly Dictionary<Vector2Int, Image> stones = new Dictionary<Vector2Int, Image>();
         private Image hoverPreview;
+        private bool hasPending;           // 待确认的落子位置
+        private Vector2Int pendingCell;
+        private RectTransform confirmRect; // 对号确认按钮（单层）
+        private Image pendingGhost;        // 待落子棋子（半透明）
+        private Image pendingHalo;         // 待落子棋子的高光环
         private Image lastMarker;
         private Image winLine;
         private Sprite circleSprite;
@@ -65,6 +71,7 @@ namespace Wuziqi.UI
             if (autoCalibrateGrid) CalibrateFromSprite();
             BuildGrid();
             CreateOverlays();
+            BuildConfirmUI();
 
             if (gameManager == null) gameManager = GameManager.Instance;
             if (gameManager != null)
@@ -254,6 +261,76 @@ namespace Wuziqi.UI
 
         private Vector2 StonePixelSize() => Vector2.one * (cellSize * stoneSizeRatio);
 
+        // ---------- 落子二次确认 ----------
+
+        /// <summary>构建落子确认 UI：对号单层（无底片）+ 待落子棋子高光预览。</summary>
+        private void BuildConfirmUI()
+        {
+            // 待落子棋子：高光环垫底 + 半透明棋子（表示还未彻底落子）
+            pendingHalo = CreateRect(fxLayer, "PendingHalo", Vector2.zero, StonePixelSize() * 1.3f, new Color(1f, 0.98f, 0.85f, 0.95f), circleSprite);
+            pendingGhost = CreateRect(fxLayer, "PendingGhost", Vector2.zero, StonePixelSize(), new Color(1f, 1f, 1f, 0.55f), GetStoneSprite(StoneColor.Black));
+
+            // 对号：单层，无任何底片
+            var go = new GameObject("ConfirmCheck", typeof(RectTransform), typeof(Image), typeof(Button));
+            confirmRect = (RectTransform)go.transform;
+            confirmRect.SetParent(fxLayer, false);
+            confirmRect.sizeDelta = Vector2.one * (cellSize * 1.15f);
+
+            var img = go.GetComponent<Image>();
+            img.sprite = confirmSprite;
+            img.raycastTarget = true;
+
+            var btn = go.GetComponent<Button>();
+            btn.transition = Selectable.Transition.None;
+            btn.onClick.AddListener(ConfirmPending);
+
+            go.SetActive(false);
+            pendingHalo.gameObject.SetActive(false);
+            pendingGhost.gameObject.SetActive(false);
+        }
+
+        /// <summary>显示待落子预览：棋子+高光在落子位，对号固定在正上方一格（不判断出界）。</summary>
+        private void ShowPending(Vector2Int cell)
+        {
+            hasPending = true;
+            pendingCell = cell;
+            Vector2 pos = CellToLocal(cell.x, cell.y);
+
+            pendingHalo.rectTransform.anchoredPosition = pos;
+            pendingGhost.rectTransform.anchoredPosition = pos;
+            var s = GetStoneSprite(gameManager.playerColor);
+            pendingGhost.sprite = s;
+            pendingGhost.color = s == circleSprite
+                ? (gameManager.playerColor == StoneColor.Black
+                    ? new Color(0.13f, 0.12f, 0.11f, 0.55f)
+                    : new Color(0.97f, 0.96f, 0.93f, 0.6f))
+                : new Color(1f, 1f, 1f, 0.55f);
+            pendingHalo.gameObject.SetActive(true);
+            pendingGhost.gameObject.SetActive(true);
+
+            confirmRect.anchoredPosition = pos + new Vector2(0f, cellSize);
+            confirmRect.gameObject.SetActive(true);
+            StartCoroutine(PopIn(confirmRect));
+        }
+
+        private void HidePending()
+        {
+            hasPending = false;
+            if (confirmRect != null) confirmRect.gameObject.SetActive(false);
+            if (pendingGhost != null) pendingGhost.gameObject.SetActive(false);
+            if (pendingHalo != null) pendingHalo.gameObject.SetActive(false);
+        }
+
+        /// <summary>确认落子（对号按钮回调 / 同一格二次点击）。</summary>
+        public void ConfirmPending()
+        {
+            if (!hasPending || gameManager == null) return;
+            if (!gameManager.Board.IsEmpty(pendingCell.x, pendingCell.y)) { HidePending(); return; }
+            var cell = pendingCell;
+            HidePending();
+            gameManager.TryPlayerPlace(cell.x, cell.y);
+        }
+
         private Image CreateRect(Transform parent, string name, Vector2 pos, Vector2 size, Color color, Sprite sprite = null)
         {
             return CreateRect(parent, name, pos.x, pos.y, size, color, sprite);
@@ -283,6 +360,7 @@ namespace Wuziqi.UI
 
         private void OnStonePlaced(Vector2Int cell, StoneColor color)
         {
+            HidePending();
             Image stone = CreateStone(cell, color);
             StartCoroutine(PopIn(stone.rectTransform));
             lastMarker.rectTransform.anchoredPosition = CellToLocal(cell.x, cell.y);
@@ -305,6 +383,7 @@ namespace Wuziqi.UI
 
         private void OnStoneRemoved(Vector2Int cell)
         {
+            HidePending();
             if (stones.TryGetValue(cell, out Image img))
             {
                 Destroy(img.gameObject);
@@ -324,6 +403,7 @@ namespace Wuziqi.UI
 
         private void OnBoardReset()
         {
+            HidePending();
             foreach (Image img in stones.Values)
                 if (img != null) Destroy(img.gameObject);
             stones.Clear();
@@ -333,6 +413,7 @@ namespace Wuziqi.UI
 
         private void OnGameEnded(GameResult result, IReadOnlyList<Vector2Int> line)
         {
+            HidePending();
             ShowPreview(false);
             if (line != null && line.Count >= 5)
             {
@@ -436,7 +517,9 @@ namespace Wuziqi.UI
             if (gameManager == null || !gameManager.CanPlayerPlaceNow) return;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(boardRect, eventData.position, eventData.pressEventCamera, out Vector2 local)) return;
             if (!TryCellFromLocal(local, out Vector2Int cell)) return;
-            gameManager.TryPlayerPlace(cell.x, cell.y);
+            if (!gameManager.Board.IsEmpty(cell.x, cell.y)) return;
+            if (hasPending && pendingCell == cell) { ConfirmPending(); return; }
+            ShowPending(cell);
         }
 
         public void OnPointerEnter(PointerEventData eventData) => pointerInside = true;
