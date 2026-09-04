@@ -52,6 +52,8 @@ namespace Wuziqi.Game
         public string GhostCatName { get; private set; }
         private List<Vector2Int> ghostMoves;
         private int ghostIndex;
+        private Coroutine ghostPrefillRoutine;
+        private int ghostPrefillToken;
 
         private readonly System.Random rng = new System.Random();
         private Coroutine aiRoutine;
@@ -74,10 +76,23 @@ namespace Wuziqi.Game
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }
 
-        /// <summary>复仇挑战：AI 按棋谱顺序重演当时的走法（棋谱走完后回落到当前 AI），玩家落子自由。</summary>
-        public void StartGhostGame(GameRecord record)
+        /// <summary>复仇挑战：快进重演棋谱到"输之前那颗棋子"的时刻，玩家从败着重下；此后 AI 按棋谱重演（占位则跳过，走完回落当前 AI）。</summary>
+        public bool StartGhostGame(GameRecord record, out string reason)
         {
-            if (record == null) return;
+            reason = null;
+            if (record == null) { reason = "record"; return false; }
+
+            // 扣挑战费用（同重开）
+            var cat = CatManager.Instance?.Selected;
+            if (cat != null && cat.challengeCost > 0 && EconomyManager.Instance != null)
+            {
+                if (!EconomyManager.Instance.SpendCoins(cat.challengeCost))
+                {
+                    reason = "coins";
+                    return false;
+                }
+            }
+
             bool recordPlayerIsBlack = record.playerColor == "Black";
             string aiColorInRecord = recordPlayerIsBlack ? "White" : "Black";
 
@@ -97,6 +112,34 @@ namespace Wuziqi.Game
             ghostIndex = 0;
             IsGhostGame = moves.Count > 0;
             GhostCatName = record.aiCatName;
+
+            // 快进重演到"输之前那颗棋子"的时刻：最后一手是 AI 的制胜子、
+            // 倒数第二手是玩家的败着，两手都不铺，轮到玩家重下那颗败着
+            int prefill = Mathf.Max(0, record.moves.Count - 2);
+            IsPlayerTurn = false; // 预铺期间禁止落子
+            PlayerTurnChanged?.Invoke(false);
+            ghostPrefillRoutine = StartCoroutine(GhostPrefillRoutine(record.moves, prefill));
+            return true;
+        }
+
+        /// <summary>快速重演棋谱前 count 手（每两颗一帧），铺完交给玩家。</summary>
+        private IEnumerator GhostPrefillRoutine(List<MoveRecord> all, int count)
+        {
+            int token = ++ghostPrefillToken;
+            for (int i = 0; i < count; i++)
+            {
+                if (token != ghostPrefillToken || !IsGhostGame)
+                    yield break; // 被重开/新复仇接管，回合状态由其负责
+                if (Board.MoveCount != i)
+                    break; // 棋盘被悔棋等外力改动 → 停止预铺，直接交还玩家
+                var m = all[i];
+                var color = m.GetStoneColor();
+                if (Board.TryPlace(m.x, m.y, color))
+                    StonePlaced?.Invoke(new Vector2Int(m.x, m.y), color);
+                if ((i & 1) == 1) yield return null;
+            }
+            IsPlayerTurn = true;
+            PlayerTurnChanged?.Invoke(true);
         }
 
         private void OnDestroy()
@@ -329,6 +372,8 @@ namespace Wuziqi.Game
         public void Restart()
         {
             if (aiRoutine != null) { StopCoroutine(aiRoutine); aiRoutine = null; }
+            if (ghostPrefillRoutine != null) { StopCoroutine(ghostPrefillRoutine); ghostPrefillRoutine = null; }
+            ghostPrefillToken++;
             IsAIThinking = false;
             Board.Reset();
             IsGameOver = false;

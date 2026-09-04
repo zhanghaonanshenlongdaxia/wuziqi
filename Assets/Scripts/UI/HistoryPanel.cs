@@ -143,12 +143,17 @@ namespace Wuziqi.UI
             }
         }
 
-        /// <summary>复仇挑战：AI 按当时的棋谱重演走法。</summary>
+        /// <summary>复仇挑战：AI 按当时的棋谱重演走法（扣挑战费，不足则留在面板）。</summary>
         private void OnRevengeClicked()
         {
-            if (selectedRecord == null) return;
+            if (selectedRecord == null || GameManager.Instance == null) return;
+            if (!GameManager.Instance.StartGhostGame(selectedRecord, out string reason))
+            {
+                if (reason == "coins")
+                    Debug.Log("[HistoryPanel] 仙喵币不足，无法复仇");
+                return;
+            }
             Hide();
-            GameManager.Instance?.StartGhostGame(selectedRecord);
         }
 
         private void OnDeleteClicked()

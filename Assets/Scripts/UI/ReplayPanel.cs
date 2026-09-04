@@ -69,6 +69,9 @@ namespace Wuziqi.UI
                 moveTimestamps[i] = record.moves[i].time;
             }
 
+            // 复盘期间暂停当前对局：AI 停止思索/落子，玩家不能落子
+            GameManager.Instance?.PauseGame();
+
             if (boardView != null) boardView.ClearAllStones();
             panel.SetActive(true);
             UpdateUI();
@@ -145,6 +148,7 @@ namespace Wuziqi.UI
             StopAutoPlay();
             panel.SetActive(false);
             currentRecord = null;
+            GameManager.Instance?.ResumeGame(); // 关闭复盘恢复对局
         }
 
         private void StartAutoPlay()

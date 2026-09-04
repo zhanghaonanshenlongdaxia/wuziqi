@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using Wuziqi.Game;
 using Wuziqi.UI;
 
@@ -22,6 +23,9 @@ public class MainMenuController : MonoBehaviour
     [Header("更新历史")]
     [SerializeField] private Button updateHistoryButton;
     [SerializeField] private Wuziqi.UI.UpdateHistoryPanel updateHistoryPanelPrefab;
+
+    [Header("段位")]
+    [SerializeField] private TMP_Text rankBadgeText;
 
     private ConfirmDialog activeDialog;
     private const string PRIVACY_KEY = "PrivacyAccepted";
@@ -54,6 +58,22 @@ public class MainMenuController : MonoBehaviour
     {
         if (PlayerPrefs.GetInt(PRIVACY_KEY, 0) == 0)
             ShowPrivacyDialog();
+    }
+
+    private void OnEnable()
+    {
+        RefreshRankBadge();
+    }
+
+    /// <summary>刷新主菜单段位徽章（RankSystem：胜场 + 最大连胜×2）。</summary>
+    public void RefreshRankBadge()
+    {
+        if (rankBadgeText == null) return;
+        var ps = Wuziqi.Game.PlayerStats.Instance;
+        if (ps == null) return;
+        var (cur, next) = Wuziqi.UI.RankSystem.GetTierProgress(ps);
+        string tier = Wuziqi.UI.RankSystem.GetTierName(ps);
+        rankBadgeText.text = next < 0 ? $"{tier} · {cur}分" : $"{tier} · {cur}/{next}分";
     }
 
     private void OnStartClicked()
