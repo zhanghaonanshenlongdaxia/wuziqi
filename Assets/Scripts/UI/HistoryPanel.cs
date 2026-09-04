@@ -23,6 +23,7 @@ namespace Wuziqi.UI
         [SerializeField] private TMP_Text detailTimeText;
         [SerializeField] private Button replayButton;
         [SerializeField] private Button deleteButton;
+        [SerializeField] private Button revengeButton; // 复仇按钮（只对失败局显示）
         [SerializeField] private GameObject emptyHint;
 
         private GameRecord selectedRecord;
@@ -34,6 +35,7 @@ namespace Wuziqi.UI
             if (clearAllButton != null) clearAllButton.onClick.AddListener(OnClearAll);
             if (replayButton != null) replayButton.onClick.AddListener(OnReplayClicked);
             if (deleteButton != null) deleteButton.onClick.AddListener(OnDeleteClicked);
+            if (revengeButton != null) revengeButton.onClick.AddListener(OnRevengeClicked);
             panel.SetActive(false);
         }
 
@@ -104,6 +106,10 @@ namespace Wuziqi.UI
             selectedRecord = GameRecordManager.Instance?.GetRecord(gameId);
             if (selectedRecord == null) return;
 
+            // 复仇按钮：只对失败局显示
+            if (revengeButton != null)
+                revengeButton.gameObject.SetActive(selectedRecord.GetResultText() == "失败");
+
             if (detailPanel != null) detailPanel.SetActive(true);
             if (detailDateText != null) detailDateText.text = "日期：" + selectedRecord.date;
             if (detailCatsText != null) detailCatsText.text = "\""+selectedRecord.playerCatName+"\"" + " vs " + "\""+selectedRecord.aiCatName+"\"";
@@ -135,6 +141,14 @@ namespace Wuziqi.UI
             {
                 Debug.LogError("[HistoryPanel] ReplayPanel not found");
             }
+        }
+
+        /// <summary>复仇挑战：AI 按当时的棋谱重演走法。</summary>
+        private void OnRevengeClicked()
+        {
+            if (selectedRecord == null) return;
+            Hide();
+            GameManager.Instance?.StartGhostGame(selectedRecord);
         }
 
         private void OnDeleteClicked()

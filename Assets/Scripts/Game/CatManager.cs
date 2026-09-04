@@ -35,6 +35,15 @@ namespace Wuziqi.Game
             return cats[index];
         }
 
+        /// <summary>按名字查猫的下标（找不到返回 -1）。</summary>
+        public int GetCatIndexByName(string catName)
+        {
+            if (cats == null || string.IsNullOrEmpty(catName)) return -1;
+            for (int i = 0; i < cats.Length; i++)
+                if (cats[i] != null && cats[i].catName == catName) return i;
+            return -1;
+        }
+
         public bool IsUnlocked(int index)
         {
             if (cats == null || index < 0 || index >= cats.Length) return false;

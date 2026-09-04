@@ -47,6 +47,12 @@ namespace Wuziqi.Game
         public event Action BoardReset;
         public event Action<bool> GamePaused; // true=暂停, false=恢复
 
+        // ---------- 复仇挑战（幽灵棋局） ----------
+        public bool IsGhostGame { get; private set; }
+        public string GhostCatName { get; private set; }
+        private List<Vector2Int> ghostMoves;
+        private int ghostIndex;
+
         private readonly System.Random rng = new System.Random();
         private Coroutine aiRoutine;
 
@@ -63,7 +69,34 @@ namespace Wuziqi.Game
         {
             IsGameStarted = true;
             IsPlayerTurn = playerColor == StoneColor.Black;
+            IsGhostGame = false;
+            ghostMoves = null;
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
+        }
+
+        /// <summary>复仇挑战：AI 按棋谱顺序重演当时的走法（棋谱走完后回落到当前 AI），玩家落子自由。</summary>
+        public void StartGhostGame(GameRecord record)
+        {
+            if (record == null) return;
+            bool recordPlayerIsBlack = record.playerColor == "Black";
+            string aiColorInRecord = recordPlayerIsBlack ? "White" : "Black";
+
+            var moves = new List<Vector2Int>();
+            foreach (var m in record.moves)
+                if (m.color == aiColorInRecord)
+                    moves.Add(new Vector2Int(m.x, m.y));
+
+            // 切换到被复仇的猫
+            int idx = CatManager.Instance != null ? CatManager.Instance.GetCatIndexByName(record.aiCatName) : -1;
+            if (idx >= 0 && CatManager.Instance != null && CatManager.Instance.SelectedIndex != idx)
+                CatManager.Instance.SelectCat(idx);
+
+            Restart(); // 清当前局（会重置幽灵状态）
+
+            ghostMoves = moves;
+            ghostIndex = 0;
+            IsGhostGame = moves.Count > 0;
+            GhostCatName = record.aiCatName;
         }
 
         private void OnDestroy()
@@ -120,6 +153,31 @@ namespace Wuziqi.Game
             }
 
             StoneColor aiColor = GomokuAIAdvanced.Other(playerColor);
+
+            // 复仇模式：按棋谱重演走法（占位则跳过该步；棋谱走完回落当前 AI）
+            if (IsGhostGame && ghostMoves != null)
+            {
+                while (ghostIndex < ghostMoves.Count && !Board.IsEmpty(ghostMoves[ghostIndex].x, ghostMoves[ghostIndex].y))
+                    ghostIndex++;
+                if (ghostIndex < ghostMoves.Count)
+                {
+                    var g = ghostMoves[ghostIndex];
+                    ghostIndex++;
+                    IsAIThinking = false;
+                    aiRoutine = null;
+                    if (Board.TryPlace(g.x, g.y, aiColor))
+                    {
+                        StonePlaced?.Invoke(g, aiColor);
+                        GameRecordManager.Instance?.RecordMove(g.x, g.y, aiColor);
+                        if (FinishIfOver()) yield break;
+                        IsPlayerTurn = true;
+                        PlayerTurnChanged?.Invoke(true);
+                        yield break;
+                    }
+                }
+                // 棋谱走完或不合法 → 继续走当前 AI
+            }
+
             CatProfile cat = CatManager.Instance?.Selected;
             int searchDepth = cat?.aiSearchDepth ?? 3;
             float scoreMultiplier = cat?.aiScoreMultiplier ?? 1.0f;
@@ -276,6 +334,8 @@ namespace Wuziqi.Game
             IsGameOver = false;
             Result = GameResult.InProgress;
             IsPlayerTurn = playerColor == StoneColor.Black;
+            IsGhostGame = false;
+            ghostMoves = null;
             BoardReset?.Invoke();
             PlayerTurnChanged?.Invoke(IsPlayerTurn);
         }

@@ -115,6 +115,11 @@ namespace Wuziqi.UI
                           || (result == GameResult.WhiteWin && gameManager.playerColor == StoneColor.White);
             resultText.text = result == GameResult.Draw ? "势均力敌 · 平局"
                             : (playerWon ? "妙手连连 · 你赢了" : "棋差一着 · 再战一局？");
+
+            // 复仇挑战胜利：专属文案
+            if (gameManager.IsGhostGame && playerWon)
+                resultText.text = "复仇成功 · 大仇得报喵！";
+
             PlayOneShot(result == GameResult.Draw ? drawClip : (playerWon ? winClip : loseClip));
 
             // 胜利给仙喵币（基础 + 连胜加成）
