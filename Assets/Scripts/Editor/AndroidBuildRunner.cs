@@ -21,6 +21,7 @@ public static class AndroidBuildRunner
     {
         // ── 版本号：versionCode 每次打包自增，文件名带版本且不覆盖旧包（可随时回传旧包）──
         PlayerSettings.Android.bundleVersionCode += 1;
+        AssetDatabase.SaveAssets(); // 立即持久化 versionCode，否则下次打包会重复同一个号
         var location = $"Builds/Android/XianMiaoWuZiQi_v{PlayerSettings.bundleVersion}_b{PlayerSettings.Android.bundleVersionCode}.apk";
         if (File.Exists(location))
             location = location.Replace(".apk", $"_{DateTime.Now:yyyyMMdd_HHmmss}.apk");
